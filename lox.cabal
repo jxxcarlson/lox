@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: b1686dfdc3726fa7b3a62b241fdd19eb7b018c42fcdc2112772a23dea6b13fe5
+-- hash: 296695308a20623bfb4b0ccabb0fedfab2b719825008bc61d862b5cf023ab19b
 
 name:           lox
 version:        0.1.0.0
@@ -29,6 +29,8 @@ library
   exposed-modules:
       Exec
       Lib
+      Parser
+      Scanner
   other-modules:
       Paths_lox
   hs-source-dirs:
