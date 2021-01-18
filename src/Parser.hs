@@ -167,7 +167,16 @@ nonzeroDigit = (\x -> [x]) <$> satisfy "nonzero digit" isNonzeroDigit
 
 digits = many digit
 
-integerDigits = pSequence [nonzeroDigit, digits]
+decimalPoint =  string "."
+
+integerDigits = (pSequence [nonzeroDigit, digits]) <* spaces
+
+floatDigits_ = (pSequence [integerDigits, decimalPoint, digits]) <* spaces
+
+doubleDigits = choice "double" [try floatDigits_, integerDigits]
+
+double :: Parser Double
+double = (\x -> read x) <$> doubleDigits
 
 
 isSpace :: Char -> Bool

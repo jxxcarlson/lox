@@ -4,7 +4,7 @@ import Parser
 
 data Token = Token { typ :: TokenType, lexeme :: String, tokenValue :: TokenValue, lineNumber :: Int} deriving Show
 
-data TokenValue = TSymbol | TString String | TDouble Double deriving Show
+data TokenValue = TSymbol | TString String | TNumber Double deriving Show
 
 data TokenType = LEFT_PAREN| RIGHT_PAREN| LEFT_BRACE| RIGHT_BRACE|
   COMMA| DOT| MINUS| PLUS| SEMICOLON| SLASH| STAR|
@@ -27,7 +27,7 @@ scan input = []
 
 parseToken k = choice "foo" [leftParen k, rightParen k, leftBrace k, rightBrace k, comma k, dot k, minus k, plus k, semicolon k, 
                              slash k, star k, bang k, bangEqual k, equal k, equalEqual k, greater k, greaterEqual k, less k, 
-                             lessEqual k]
+                             lessEqual k, number k]
 
 parseLine k = many (parseToken k)
 
@@ -114,3 +114,19 @@ lessEqual :: Int -> Parser Token
 lessEqual line_ = (\s -> Token { typ = LESS_EQUAL, lexeme = s, tokenValue = TSymbol,  lineNumber = line_ }) <$> symbol "<="
 
 -- IDENTIFIER| STRING| NUMBER|
+
+-- NUMBER
+positiveNumber :: Int -> Parser Token
+positiveNumber line_ = do
+    x <- doubleDigits
+    return Token { typ = NUMBER, lexeme = x, tokenValue = TNumber (read x),  lineNumber = line_ }
+
+
+negativeNumber :: Int -> Parser Token
+negativeNumber line_ = do
+    x <- string "-" >> doubleDigits
+    let x' = '-':x
+    return Token { typ = NUMBER, lexeme = x', tokenValue = TNumber (read x'),  lineNumber = line_ }
+
+
+number line_ = choice "number" [try $ negativeNumber line_, positiveNumber line_]
