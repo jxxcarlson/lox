@@ -1,1 +1,1 @@
-# lox
+Crafting an interpreterk: Haskell implementation
