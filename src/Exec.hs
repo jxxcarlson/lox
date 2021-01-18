@@ -29,10 +29,8 @@ exec :: PState -> String -> IO PState
 exec pState str = 
   case words str of
      [] -> return pState { message = ""}
-     (cmd:args) -> 
-       case cmd of
-         "/help" -> help pState
-         _ -> return pState {message = prefix ++  "I don't understand\n" ++ str }
+     [":help"]  -> help pState
+     args ->  return pState {message = prefix ++  "I don't understand\n" ++ str }
 
 
 
@@ -42,7 +40,7 @@ help pState = do
   return pState { message = T.unpack text}
 
 
--- UTILITIES d
+-- UTILITIES
 
 carryState :: PState -> IO () -> (PState, IO ())
 carryState pState io = (pState, io)
