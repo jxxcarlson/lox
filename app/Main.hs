@@ -14,18 +14,9 @@ main =
 
 loop :: PState -> IO ()
 loop pState = do
-  putStr (show (count pState) ++ ": info > " ) >> hFlush stdout  
-  input <- innerLoop "" 
-  pState' <- exec pState input
-  unless (input == "/quit ") $ putStrLn (message pState') >> loop pState' {count = count pState' + 1}
+  putStr (show (count pState) ++ ": lox > " ) >> hFlush stdout  
+  line <- getLine
+  pState' <- exec pState line
+  unless (line == ":quit") $ putStrLn (message pState') >> loop pState' {count = count pState' + 1}
 
-
-innerLoop :: String -> IO String
-innerLoop str = do
-   line <- getLine
-   if line == "" then return ""
-   else if head line == '/' then 
-       return (line ++ " " ++ str)
-   else  
-       innerLoop (str ++ "\n" ++ line)
 
