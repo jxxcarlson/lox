@@ -39,11 +39,12 @@ help pState = do
   text <- TIO.readFile  "help.txt"
   return pState { message = T.unpack text}
 
+run :: String -> String
+run input = "Not implemented yet (run)"
 
--- UTILITIES
 
-carryState :: PState -> IO () -> (PState, IO ())
-carryState pState io = (pState, io)
-
-dropCommand :: String -> String -> String 
-dropCommand cmd str = drop ((length cmd)+ 2) str
+runFile :: String -> IO ()
+runFile filePath =
+    do
+    input <- TIO.readFile filePath 
+    putStrLn $ run $ T.unpack input
