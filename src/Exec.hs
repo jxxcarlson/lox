@@ -10,9 +10,8 @@ import System.Environment
 
 import Data.List.NonEmpty (fromList)
 
--- sendGridApiKey :: ApiKey
--- sendGridApiKey = ApiKey "SG..."
-
+import Parser
+import Scanner
  
 -- DISPATCHER
 
@@ -26,12 +25,8 @@ initialPState = PState { count = 0, message = "" }
 prefix = "-----\n"
 
 exec :: PState -> String -> IO PState
-exec pState str = 
-  case words str of
-     [] -> return pState { message = ""}
-     [":help"]  -> help pState
-     args ->  return pState {message = prefix ++  "I don't understand\n" ++ str }
-
+exec pState line = 
+  return pState { message = show $ Scanner.parseLine (count pState) line }
 
 
 help :: PState -> IO PState
@@ -40,7 +35,14 @@ help pState = do
   return pState { message = T.unpack text}
 
 run :: String -> String
-run input = "Not implemented yet (run)"
+run input = "not yet implemented"
+
+runLine :: Int -> String -> String 
+runLine k input = 
+    case Parser.runParser (Scanner.lineParser k) input of 
+        ("", Right tokens) -> show tokens
+        (remainder, Left error) -> show error
+    
 
 
 runFile :: String -> IO ()
@@ -48,3 +50,5 @@ runFile filePath =
     do
     input <- TIO.readFile filePath 
     putStrLn $ run $ T.unpack input
+
+

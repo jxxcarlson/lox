@@ -8,14 +8,14 @@ data TokenValue = TSymbol | TString String | TNumber Double deriving Show
 
 data TokenType = LEFT_PAREN| RIGHT_PAREN| LEFT_BRACE| RIGHT_BRACE|
   COMMA| DOT| MINUS| PLUS| SEMICOLON| SLASH| STAR|
-  -- One or two character tokens.
+  -- One or two character tokens
   BANG| BANG_EQUAL|
   EQUAL| EQUAL_EQUAL|
   GREATER| GREATER_EQUAL|
   LESS| LESS_EQUAL|
-  -- Literals.
+  -- Literals
   IDENTIFIER| STRING| NUMBER|
-  -- Keywords.
+  -- Keywords
   AND| CLASS| ELSE| FALSE| FUN| FOR| IF| NIL| OR|
   PRINT| RETURN| SUPER| THIS| TRUE| VAR| WHILE|
   EOF
@@ -25,11 +25,19 @@ data TokenType = LEFT_PAREN| RIGHT_PAREN| LEFT_BRACE| RIGHT_BRACE|
 scan :: String -> [Token]
 scan input = []
 
-parseToken k = choice "foo" [leftParen k, rightParen k, leftBrace k, rightBrace k, comma k, dot k, minus k, plus k, semicolon k, 
+tokenParser k = choice "foo" [leftParen k, rightParen k, leftBrace k, rightBrace k, comma k, dot k, minus k, plus k, semicolon k, 
                              slash k, star k, bang k, bangEqual k, equal k, equalEqual k, greater k, greaterEqual k, less k, 
-                             lessEqual k, number k]
+                             lessEqual k, keywordAnd k, keywordClass k, keywordElse k, keywordFalse k, keywordFun k, 
+                             keywordFor k, keywordIf k, keywordNil k, keywordOr k, keywordPrint k, keywordReturn k, 
+                             keywordSuper k, keywordThis k, keywordTrue k, keywordVar k, keywordWhile k,
+                             identifier_ k, stringLiteral k, number k]
 
-parseLine k = many (parseToken k)
+
+-- parseLine :: Int -> String -> 
+parseLine k input = runParser (lineParser k) input
+
+
+lineParser k = many (tokenParser k)
 
 -- PARSERS FOR INDIVIDUAL TOKENS
 
@@ -129,4 +137,76 @@ negativeNumber line_ = do
     return Token { typ = NUMBER, lexeme = x', tokenValue = TNumber (read x'),  lineNumber = line_ }
 
 
+number :: Int -> Parser Token
 number line_ = choice "number" [try $ negativeNumber line_, positiveNumber line_]
+
+identifier_ :: Int -> Parser Token
+identifier_ line_ = (\s -> Token { typ = IDENTIFIER, lexeme = s, tokenValue = TString s,  lineNumber = line_ }) <$> identifier
+
+stringLiteral :: Int -> Parser Token
+stringLiteral line_ = (\s -> Token { typ = STRING, lexeme = s, tokenValue = TString s,  lineNumber = line_ }) <$>  literalString
+
+-- AND
+keywordAnd :: Int -> Parser Token
+keywordAnd k = (\s -> Token { typ = AND, lexeme = s, tokenValue = TString s,  lineNumber = k }) <$>  try (symbol "and")
+
+--  CLASS
+keywordClass :: Int -> Parser Token
+keywordClass k = (\s -> Token { typ = CLASS, lexeme = s, tokenValue = TString s,  lineNumber = k }) <$>  try (symbol "class")
+
+--  ELSE
+keywordElse :: Int -> Parser Token
+keywordElse k = (\s -> Token { typ = ELSE, lexeme = s, tokenValue = TString s,  lineNumber = k }) <$>  try (symbol "else")
+
+-- FALSE 
+keywordFalse :: Int -> Parser Token
+keywordFalse k = (\s -> Token { typ = FALSE, lexeme = s, tokenValue = TString s,  lineNumber = k }) <$>  try (symbol "false")
+
+-- FUN
+keywordFun :: Int -> Parser Token
+keywordFun k = (\s -> Token { typ = FUN, lexeme = s, tokenValue = TString s,  lineNumber = k }) <$>  try (symbol "fun")
+
+-- FOR
+keywordFor :: Int -> Parser Token
+keywordFor k = (\s -> Token { typ = FOR, lexeme = s, tokenValue = TString s,  lineNumber = k }) <$>  try (symbol "for")
+
+-- IF
+keywordIf :: Int -> Parser Token
+keywordIf k = (\s -> Token { typ = IF, lexeme = s, tokenValue = TString s,  lineNumber = k }) <$>  try (symbol "if")
+
+-- NIL
+keywordNil :: Int -> Parser Token
+keywordNil k = (\s -> Token { typ = NIL, lexeme = s, tokenValue = TString s,  lineNumber = k }) <$>  try (symbol "nil")
+
+
+-- OR
+keywordOr :: Int -> Parser Token
+keywordOr k = (\s -> Token { typ = OR, lexeme = s, tokenValue = TString s,  lineNumber = k }) <$>  try (symbol "or")
+
+-- PRINT
+keywordPrint :: Int -> Parser Token
+keywordPrint k = (\s -> Token { typ = PRINT, lexeme = s, tokenValue = TString s,  lineNumber = k }) <$>  try (symbol "print")
+
+-- RETURN
+keywordReturn :: Int -> Parser Token
+keywordReturn k = (\s -> Token { typ = RETURN, lexeme = s, tokenValue = TString s,  lineNumber = k }) <$>  try (symbol "return")
+
+-- SUPER
+keywordSuper :: Int -> Parser Token
+keywordSuper k = (\s -> Token { typ = SUPER, lexeme = s, tokenValue = TString s,  lineNumber = k }) <$>  try (symbol "super")
+
+-- THIS
+keywordThis :: Int -> Parser Token
+keywordThis k = (\s -> Token { typ = THIS, lexeme = s, tokenValue = TString s,  lineNumber = k }) <$>  try (symbol "this")
+
+-- TRUE
+keywordTrue :: Int -> Parser Token
+keywordTrue k = (\s -> Token { typ = TRUE, lexeme = s, tokenValue = TString s,  lineNumber = k }) <$>  try (symbol "true")
+
+-- VAR
+keywordVar :: Int -> Parser Token
+keywordVar k = (\s -> Token { typ = VAR, lexeme = s, tokenValue = TString s,  lineNumber = k }) <$>  try (symbol "var")
+
+-- WHILE
+keywordWhile:: Int -> Parser Token
+keywordWhile k = (\s -> Token { typ = WHILE, lexeme = s, tokenValue = TString s,  lineNumber = k }) <$>  try (symbol "while")
