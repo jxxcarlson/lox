@@ -7,6 +7,7 @@ import Data.Maybe(catMaybes)
 import qualified Data.Text.IO as TIO
 import qualified Data.Text as T
 import System.Environment
+import qualified System.Directory.Internal as SysD
 import Data.List
 
 import Data.List.NonEmpty (fromList)
@@ -43,24 +44,60 @@ run input =
     in
         Data.List.intercalate "\n" $ map (\(k, input') -> runLine k input') inputs
 
-runLine :: Int -> String -> String 
+runLine :: Int -> String -> String
 runLine k input = 
-    let 
-        prefix k  = "Line " ++ show k ++ ": " ++ input ++ " :: " 
-    in
-    case Scanner.line k input of 
-        ("", Right tokens) -> prefix k ++ Scanner.prettyPrint tokens
-        (remainder, Left error) -> prefix k ++  show error
-        _ -> prefix k ++ colorRed "Unexplained error"
-    
+    case Scanner.line k $ trimLeadingSpaces input of 
+        ("", Right tokens) -> prefixLine k (cyan input) ++ Scanner.prettyPrint tokens
+        (remainder, Left error) -> prefixLine k (cyan input) ++ red (show error)
+        _ -> prefixLine k (cyan input) ++ red "Unexplained error"
 
-colorRed :: String -> String
-colorRed s = "\"\\u001b[31m" ++ s ++ "\\e[0m\""
+
+black :: String -> String
+black str = "\x1b[30m" ++ str ++ "\x1b[0m"
+
+red :: String -> String
+red str = "\x1b[31m" ++ str ++ "\x1b[0m"
+
+green :: String -> String
+green str = "\x1b[32m" ++ str ++ "\x1b[0m"
+
+yellow :: String -> String
+yellow str = "\x1b[33m" ++ str ++ "\x1b[0m"
+
+blue :: String -> String
+blue str = "\x1b[34m" ++ str ++ "\x1b[0m"
+
+magenta :: String -> String
+magenta str = "\x1b[35m" ++ str ++ "\x1b[0m"
+
+cyan :: String -> String
+cyan s = "\x1b[36m" ++ s ++ "\x1b[0m"
+
+white :: String -> String
+white s = "\x1b[37m" ++ s ++ "\x1b[0m"
 
 runFile :: String -> IO ()
 runFile filePath = 
     do
     input <- TIO.readFile filePath 
-    putStrLn $ run $ T.unpack input
+    let inputLines = numberLines . removeComments . lines . T.unpack $ input
+    SysD.sequenceWithIOErrors_ $ processInputLines inputLines
 
 
+processInputLines :: [(Int, String)] -> [IO()]
+processInputLines lines_ = map processInputLine lines_
+
+processInputLine :: (Int, String) -> IO()
+processInputLine (k, input) = putStrLn $ runLine k input
+
+trimLeadingSpaces :: String -> String 
+trimLeadingSpaces = dropWhile isSpace
+
+removeComments :: [String] -> [String]
+removeComments lines_ = filter (\l -> l !! 0 /= '#') $ filter (\l -> length l > 0) $ lines_
+
+numberLines :: [String] -> [(Int, String)]
+numberLines lines_ = zip [0..] lines_
+
+prefixLine :: Int -> String -> String 
+prefixLine k input = "Line " ++ show k ++ ": " ++ input ++ " :: " 

@@ -23,6 +23,7 @@ dependencies:
 - base >= 4.7 && < 5
 - MissingH
 - text
+- directory >= 1.3.6.0 && < 2
 
 library:
   source-dirs: src

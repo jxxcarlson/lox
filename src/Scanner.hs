@@ -33,13 +33,13 @@ data TokenType = LEFT_PAREN| RIGHT_PAREN| LEFT_BRACE| RIGHT_BRACE|
   deriving Show
 
 
-tokenParser k = choice "foo" [leftParen k, rightParen k, leftBrace k, rightBrace k, comma k, dot k, minus k, plus k, semicolon k, 
+tokenParser k = choice "foo" [number k, leftParen k, rightParen k, leftBrace k, rightBrace k, comma k, dot k, minus k, plus k, semicolon k, 
                              slash k, star k, try (bangEqual k), bang k,  try (equalEqual k), equal k, try (greaterEqual k), greater k,  
                              try (lessEqual k), less k, 
                              keywordAnd k, keywordClass k, keywordElse k, keywordFalse k, keywordFun k, 
                              keywordFor k, keywordIf k, keywordNil k, keywordOr k, keywordPrint k, keywordReturn k, 
                              keywordSuper k, keywordThis k, keywordTrue k, keywordVar k, keywordWhile k,
-                             identifier_ k, stringLiteral k, number k]
+                             identifier_ k, stringLiteral k ]
 
 
 -- parseLine :: Int -> String -> 
@@ -56,19 +56,19 @@ lineParser k = many (tokenParser k)
 
 -- LEFT_PAREN
 leftParen :: Int -> Parser Token
-leftParen line_ = (\s -> Token { typ = LEFT_PAREN, lexeme = s, tokenValue = TSymbol,  lineNumber = line_ }) <$> symbol "("
+leftParen line_ = (\s -> Token { typ = LEFT_PAREN, lexeme = s, tokenValue = TSymbol,  lineNumber = line_ }) <$> symbol' "("
 
 -- RIGHT_PAREN
 rightParen :: Int -> Parser Token
-rightParen line_ = (\s -> Token { typ = RIGHT_PAREN, lexeme = s, tokenValue = TSymbol,  lineNumber = line_ }) <$> symbol ")"
+rightParen line_ = (\s -> Token { typ = RIGHT_PAREN, lexeme = s, tokenValue = TSymbol,  lineNumber = line_ }) <$> symbol' ")"
 
 -- LEFT_BRACE
 leftBrace :: Int -> Parser Token
-leftBrace line_ = (\s -> Token { typ = LEFT_BRACE, lexeme = s, tokenValue = TSymbol,  lineNumber = line_ }) <$> symbol "["
+leftBrace line_ = (\s -> Token { typ = LEFT_BRACE, lexeme = s, tokenValue = TSymbol,  lineNumber = line_ }) <$> symbol' "{"
 
 -- RIGHT_BRACE
 rightBrace :: Int -> Parser Token
-rightBrace line_ = (\s -> Token { typ = RIGHT_BRACE, lexeme = s, tokenValue = TSymbol,  lineNumber = line_ }) <$> symbol "]"
+rightBrace line_ = (\s -> Token { typ = RIGHT_BRACE, lexeme = s, tokenValue = TSymbol,  lineNumber = line_ }) <$> symbol' "}"
 
 -- COMMA
 comma:: Int -> Parser Token
@@ -76,7 +76,7 @@ comma line_ = (\s -> Token { typ = COMMA, lexeme = s, tokenValue = TSymbol,  lin
 
 -- DOT
 dot :: Int -> Parser Token
-dot line_ = (\s -> Token { typ = DOT, lexeme = s, tokenValue = TSymbol,  lineNumber = line_ }) <$> symbol "."
+dot line_ = (\s -> Token { typ = DOT, lexeme = s, tokenValue = TSymbol,  lineNumber = line_ }) <$> symbol' "."
 
 -- MINUS
 minus :: Int -> Parser Token
@@ -92,11 +92,11 @@ semicolon line_ = (\s -> Token { typ = SEMICOLON, lexeme = s, tokenValue = TSymb
 
 -- SLASH
 slash :: Int -> Parser Token
-slash line_ = (\s -> Token { typ = SLASH, lexeme = s, tokenValue = TSymbol,  lineNumber = line_ }) <$> symbol "/"
+slash line_ = (\s -> Token { typ = SLASH, lexeme = s, tokenValue = TSymbol,  lineNumber = line_ }) <$> symbol' "/"
 
 --  STAR
 star :: Int -> Parser Token
-star line_ = (\s -> Token { typ = SLASH, lexeme = s, tokenValue = TSymbol,  lineNumber = line_ }) <$> symbol "*"
+star line_ = (\s -> Token { typ = SLASH, lexeme = s, tokenValue = TSymbol,  lineNumber = line_ }) <$> symbol' "*"
 
 --  BANG_EQUAL
 bangEqual :: Int -> Parser Token
@@ -146,13 +146,16 @@ positiveNumber line_ = do
 
 negativeNumber :: Int -> Parser Token
 negativeNumber line_ = do
-    x <- string "-" >> doubleDigits
+    x <- symbol' "-" *> doubleDigits
     let x' = '-':x
     return Token { typ = NUMBER, lexeme = x', tokenValue = TNumber (read x'),  lineNumber = line_ }
 
+zero :: Int -> Parser Token
+zero line_ = (\s -> Token { typ = NUMBER, lexeme = s, tokenValue = TNumber 0,  lineNumber = line_ }) <$> symbol' "0"
+
 
 number :: Int -> Parser Token
-number line_ = choice "number" [try $ negativeNumber line_, positiveNumber line_]
+number line_ = choice "number" [try (zero line_), try $ negativeNumber line_, positiveNumber line_]
 
 identifier_ :: Int -> Parser Token
 identifier_ line_ = (\s -> Token { typ = IDENTIFIER, lexeme = s, tokenValue = TString s,  lineNumber = line_ }) <$> identifier

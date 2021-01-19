@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 296695308a20623bfb4b0ccabb0fedfab2b719825008bc61d862b5cf023ab19b
+-- hash: 11b634970778d5133780ec9205f1640bbec9a69c381a16b2ff8d422b9ceb8d1b
 
 name:           lox
 version:        0.1.0.0
@@ -38,6 +38,7 @@ library
   build-depends:
       MissingH
     , base >=4.7 && <5
+    , directory >=1.3.6.0 && <2
     , text
   default-language: Haskell2010
 
@@ -51,6 +52,7 @@ executable lox-exe
   build-depends:
       MissingH
     , base >=4.7 && <5
+    , directory >=1.3.6.0 && <2
     , lox
     , text
   default-language: Haskell2010
@@ -66,6 +68,7 @@ test-suite lox-test
   build-depends:
       MissingH
     , base >=4.7 && <5
+    , directory >=1.3.6.0 && <2
     , lox
     , text
   default-language: Haskell2010
