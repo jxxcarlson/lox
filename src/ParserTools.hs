@@ -1,4 +1,4 @@
-module Parser where
+module ParserTools where
 
 -- https://hasura.io/blog/parser-combinators-walkthrough/
 
@@ -90,7 +90,7 @@ instance Monad Parser where
 -- ("axyz", Left (ParseError "starts with x" "'a'"))
 satisfy :: String -> (Char -> Bool) -> Parser Char
 satisfy description predicate = try $ do
-  c <- Parser.any
+  c <- ParserTools.any
   if predicate c
     then return c
     else parseError description c
@@ -155,7 +155,7 @@ pSequence (p:ps) = do
 
   -- MORE  
 
--- Parser.runParser (Parser.char 'x') "xyz"
+-- ParserTools.runParser (ParserTools.char 'x') "xyz"
 -- ("yz",Right 'x')
 char c = satisfy [c]     (== c)
 
@@ -221,7 +221,7 @@ isNonzeroDigit c = c `elem` "123456789"
 
 -- -- ignore leading spaces
 -- spaces *> value
--- Parser.runParser (Parser.char 'x' <* Parser.spaces) "x   "
+-- ParserTools.runParser (ParserTools.char 'x' <* ParserTools.spaces) "x   "
 -- ("",Right 'x')
 
 -- -- ignore trailing spaces

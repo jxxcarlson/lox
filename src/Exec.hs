@@ -12,7 +12,7 @@ import Data.List
 
 import Data.List.NonEmpty (fromList)
 
-import Parser
+import ParserTools
 import Scanner
  
 -- DISPATCHER

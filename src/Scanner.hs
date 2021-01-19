@@ -1,10 +1,10 @@
 module Scanner where 
 
-import Parser
+import ParserTools
 import Data.List
 
 line :: Int -> String -> (String, Either ParseError [Token])
-line lineNumber input =  Parser.runParser (lineParser lineNumber) input
+line lineNumber input =  ParserTools.runParser (lineParser lineNumber) input
 
 prettyPrintToken :: Token -> String
 prettyPrintToken tok = show (typ tok) ++ ": " ++ lexeme tok
