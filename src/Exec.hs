@@ -14,6 +14,7 @@ import Data.List.NonEmpty (fromList)
 
 import ParserTools
 import Scanner
+import qualified Parser as EP -- Expressions Parser
  
 -- DISPATCHER
 
@@ -28,7 +29,7 @@ prefix = "-----\n"
 
 exec :: PState -> String -> IO PState
 exec pState line = 
-  return pState { message = runLine (count pState) line }
+  return pState { message = runLine' (count pState) line }
 
 
 help :: PState -> IO PState
@@ -42,12 +43,22 @@ run input =
         lines_ = filter (\l -> l !! 0 /= '#') $ filter (\l -> length l > 0) $ lines input
         inputs = zip [0..] lines_
     in
-        Data.List.intercalate "\n" $ map (\(k, input') -> runLine k input') inputs
+        Data.List.intercalate "\n" $ map (\(k, input') -> runLine' k input') inputs
 
 runLine :: Int -> String -> String
 runLine k input = 
     case Scanner.line k $ trimLeadingSpaces input of 
         ("", Right tokens) -> prefixLine k (cyan input) ++ Scanner.prettyPrint tokens
+        (remainder, Left error) -> prefixLine k (cyan input) ++ red (show error)
+        _ -> prefixLine k (cyan input) ++ red "Unexplained error"
+
+runLine' :: Int -> String -> String
+runLine' k input = 
+    case Scanner.line k $ trimLeadingSpaces input of 
+        ("", Right tokens) -> -- prefixLine k (cyan input) ++ Scanner.prettyPrint tokens
+           case EP.runParser EP.number tokens of 
+               ([], Right e) -> prefixLine k (cyan input) ++ EP.prettyPrint e
+               (ts', Left error') -> prefixLine k (cyan input) ++ red (show error')
         (remainder, Left error) -> prefixLine k (cyan input) ++ red (show error)
         _ -> prefixLine k (cyan input) ++ red "Unexplained error"
 
@@ -88,7 +99,7 @@ processInputLines :: [(Int, String)] -> [IO()]
 processInputLines lines_ = map processInputLine lines_
 
 processInputLine :: (Int, String) -> IO()
-processInputLine (k, input) = putStrLn $ runLine k input
+processInputLine (k, input) = putStrLn $ runLine' k input
 
 trimLeadingSpaces :: String -> String 
 trimLeadingSpaces = dropWhile isSpace

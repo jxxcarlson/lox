@@ -1,9 +1,43 @@
 module Parser where
 
+import Scanner
+
+newtype Parser a b = Parser {
+  runParser :: [a] -> ([a], Either ParseError b)
+}
+
+number :: Parser Token Expression
+number = Parser $ \input -> 
+  let 
+      (t:ts) = input
+  in
+      if typ t == NUMBER then
+        (ts, Right (toLiteral $ tokenValue t))
+        -- (ts, Right (makeNumber 1))
+      else
+      ([], Left $ ParseError {lineNo = Scanner.lineNumber t, message = "Error on NUMBER"})
+   
+
+toLiteral :: TokenValue -> Expression
+toLiteral tv = 
+    case tv of
+        TSymbol -> Literal NIL_
+        TString s -> Literal (STR s)
+        TNumber x -> Literal (Number x)
+
+
+
+data ParseError = ParseError { lineNo :: Int, message :: String} deriving Show
+
+dummyError :: ParseError
+dummyError = ParseError { lineNo = 0, message = "Nothing here yet"}
+
+-- SYNTAX TREE
+
 data Expression = Literal LiteralValue | Unary UnaryValue | Binary BinaryValue | Group Expression
    deriving Show 
 
-data LiteralValue = Number Double | STR String 
+data LiteralValue = Number Double | STR String | NIL_
    deriving Show
 
 data UnaryValue = UnaryValue {op :: UnaryOp, uexpr :: Expression}
@@ -17,6 +51,13 @@ data BinaryOp = BEqual | BNotEqual | BLess | BLessEqual | BGreater | BGreaterEqu
 
 data UnaryOp = UMinus | UBang 
   deriving Show
+
+-- PARSER
+
+
+
+
+-- PRETTY PRINTER
 
 {-
 
@@ -32,9 +73,9 @@ prettyPrint expr =
             case litVal of 
                 Number x -> show x
                 STR s -> s
-        Unary uVal -> prettyPrintUnaryOp (op uVal) ++ prettyPrint (uexpr uVal)
-        Binary bVal -> prettyPrint (leftExpr bVal) ++ " " ++ prettyPrintBinop (binop bVal) ++ " " ++ prettyPrint (rightExpr bVal)
-        Group e -> "(" ++ prettyPrint e ++ ")"
+        Unary uVal -> prettyPrintUnaryOp (op uVal) ++ Parser.prettyPrint (uexpr uVal)
+        Binary bVal -> Parser.prettyPrint (leftExpr bVal) ++ " " ++ prettyPrintBinop (binop bVal) ++ " " ++ Parser.prettyPrint (rightExpr bVal)
+        Group e -> "(" ++ Parser.prettyPrint e ++ ")"
 
            
 
@@ -65,4 +106,7 @@ makeNumber x = Literal (Number x)
 
 makeString :: String -> Expression
 makeString str = Literal (STR str)
+
+expression :: [Token] -> Either ParseError Expression
+expression tokens = Left dummyError
 

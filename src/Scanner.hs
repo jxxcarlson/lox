@@ -30,7 +30,7 @@ data TokenType = LEFT_PAREN| RIGHT_PAREN| LEFT_BRACE| RIGHT_BRACE|
   AND| CLASS| ELSE| FALSE| FUN| FOR| IF| NIL| OR|
   PRINT| RETURN| SUPER| THIS| TRUE| VAR| WHILE|
   EOF
-  deriving Show
+  deriving (Eq, Show)
 
 
 tokenParser k = choice "foo" [number k, leftParen k, rightParen k, leftBrace k, rightBrace k, comma k, dot k, minus k, plus k, semicolon k, 
