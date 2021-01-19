@@ -233,7 +233,10 @@ isNonzeroDigit c = c `elem` "123456789"
 
 string = traverse char
 spaces = many space
-symbol s = string s <* spaces
+spaces' = space <* spaces
+symbol s = string (s ++ " ") <* spaces
+symbol' s = string s <* spaces
+
 
 between open close value = open *> value <* close
 brackets :: Parser a -> Parser a

@@ -1,6 +1,17 @@
 module Scanner where 
 
 import Parser
+import Data.List
+
+line :: Int -> String -> (String, Either ParseError [Token])
+line lineNumber input =  Parser.runParser (lineParser lineNumber) input
+
+prettyPrintToken :: Token -> String
+prettyPrintToken tok = show (typ tok) ++ ": " ++ lexeme tok
+
+prettyPrint :: [Token] -> String 
+prettyPrint ts = intercalate ", " (map prettyPrintToken ts)
+
 
 data Token = Token { typ :: TokenType, lexeme :: String, tokenValue :: TokenValue, lineNumber :: Int} deriving Show
 
@@ -22,12 +33,10 @@ data TokenType = LEFT_PAREN| RIGHT_PAREN| LEFT_BRACE| RIGHT_BRACE|
   deriving Show
 
 
-scan :: String -> [Token]
-scan input = []
-
 tokenParser k = choice "foo" [leftParen k, rightParen k, leftBrace k, rightBrace k, comma k, dot k, minus k, plus k, semicolon k, 
-                             slash k, star k, bang k, bangEqual k, equal k, equalEqual k, greater k, greaterEqual k, less k, 
-                             lessEqual k, keywordAnd k, keywordClass k, keywordElse k, keywordFalse k, keywordFun k, 
+                             slash k, star k, try (bangEqual k), bang k,  try (equalEqual k), equal k, try (greaterEqual k), greater k,  
+                             try (lessEqual k), less k, 
+                             keywordAnd k, keywordClass k, keywordElse k, keywordFalse k, keywordFun k, 
                              keywordFor k, keywordIf k, keywordNil k, keywordOr k, keywordPrint k, keywordReturn k, 
                              keywordSuper k, keywordThis k, keywordTrue k, keywordVar k, keywordWhile k,
                              identifier_ k, stringLiteral k, number k]
@@ -79,7 +88,7 @@ plus line_ = (\s -> Token { typ = PLUS, lexeme = s, tokenValue = TSymbol,  lineN
 
 -- SEMICOLON
 semicolon :: Int -> Parser Token
-semicolon line_ = (\s -> Token { typ = SEMICOLON, lexeme = s, tokenValue = TSymbol,  lineNumber = line_ }) <$> symbol ";"
+semicolon line_ = (\s -> Token { typ = SEMICOLON, lexeme = s, tokenValue = TSymbol,  lineNumber = line_ }) <$> symbol' ";"
 
 -- SLASH
 slash :: Int -> Parser Token
@@ -89,37 +98,42 @@ slash line_ = (\s -> Token { typ = SLASH, lexeme = s, tokenValue = TSymbol,  lin
 star :: Int -> Parser Token
 star line_ = (\s -> Token { typ = SLASH, lexeme = s, tokenValue = TSymbol,  lineNumber = line_ }) <$> symbol "*"
 
+--  BANG_EQUAL
+bangEqual :: Int -> Parser Token
+bangEqual line_ = (\s -> Token { typ = BANG_EQUAL, lexeme = s, tokenValue = TSymbol,  lineNumber = line_ }) <$> symbol "!="
+
+
 --  BANG
 bang :: Int -> Parser Token
 bang line_ = (\s -> Token { typ = BANG, lexeme = s, tokenValue = TSymbol,  lineNumber = line_ }) <$> symbol "!"
-
---  BANG_EQUAL
-bangEqual :: Int -> Parser Token
-bangEqual line_ = (\s -> Token { typ = SLASH, lexeme = s, tokenValue = TSymbol,  lineNumber = line_ }) <$> symbol "*"
-
---  EQUAL| EQUAL_EQUAL| GREATER| GREATER_EQUAL| LESS| LESS_EQUAL|
-equal :: Int -> Parser Token
-equal line_ = (\s -> Token { typ = EQUAL, lexeme = s, tokenValue = TSymbol,  lineNumber = line_ }) <$> symbol "="
 
 --  EQUAL_EQUAL
 equalEqual :: Int -> Parser Token
 equalEqual line_ = (\s -> Token { typ = EQUAL_EQUAL, lexeme = s, tokenValue = TSymbol,  lineNumber = line_ }) <$> symbol "=="
 
---  GREATER
-greater :: Int -> Parser Token
-greater line_ = (\s -> Token { typ = GREATER, lexeme = s, tokenValue = TSymbol,  lineNumber = line_ }) <$> symbol ">"
+
+--  EQUAL
+equal :: Int -> Parser Token
+equal line_ = (\s -> Token { typ = EQUAL, lexeme = s, tokenValue = TSymbol,  lineNumber = line_ }) <$> symbol "="
 
 --  GREATER_EQUAL
 greaterEqual :: Int -> Parser Token
 greaterEqual line_ = (\s -> Token { typ = GREATER_EQUAL, lexeme = s, tokenValue = TSymbol,  lineNumber = line_ }) <$> symbol ">="
 
---  LESS
-less :: Int -> Parser Token
-less line_ = (\s -> Token { typ = LESS, lexeme = s, tokenValue = TSymbol,  lineNumber = line_ }) <$> symbol "<"
+
+--  GREATER
+greater :: Int -> Parser Token
+greater line_ = (\s -> Token { typ = GREATER, lexeme = s, tokenValue = TSymbol,  lineNumber = line_ }) <$> symbol ">"
 
 --  LESS_EQUAL
 lessEqual :: Int -> Parser Token
 lessEqual line_ = (\s -> Token { typ = LESS_EQUAL, lexeme = s, tokenValue = TSymbol,  lineNumber = line_ }) <$> symbol "<="
+
+
+--  LESS
+less :: Int -> Parser Token
+less line_ = (\s -> Token { typ = LESS, lexeme = s, tokenValue = TSymbol,  lineNumber = line_ }) <$> symbol "<"
+
 
 -- IDENTIFIER| STRING| NUMBER|
 
@@ -210,3 +224,7 @@ keywordVar k = (\s -> Token { typ = VAR, lexeme = s, tokenValue = TString s,  li
 -- WHILE
 keywordWhile:: Int -> Parser Token
 keywordWhile k = (\s -> Token { typ = WHILE, lexeme = s, tokenValue = TString s,  lineNumber = k }) <$>  try (symbol "while")
+
+--  EOF
+eof :: Int -> Parser Token
+eof line_ = (\s -> Token { typ = EOF, lexeme = "EOF", tokenValue = TSymbol,  lineNumber = line_ }) <$> symbol ""

@@ -7,6 +7,7 @@ import Data.Maybe(catMaybes)
 import qualified Data.Text.IO as TIO
 import qualified Data.Text as T
 import System.Environment
+import Data.List
 
 import Data.List.NonEmpty (fromList)
 
@@ -26,7 +27,7 @@ prefix = "-----\n"
 
 exec :: PState -> String -> IO PState
 exec pState line = 
-  return pState { message = show $ Scanner.parseLine (count pState) line }
+  return pState { message = runLine (count pState) line }
 
 
 help :: PState -> IO PState
@@ -35,18 +36,29 @@ help pState = do
   return pState { message = T.unpack text}
 
 run :: String -> String
-run input = "not yet implemented"
+run input = 
+    let 
+        lines_ = filter (\l -> l !! 0 /= '#') $ filter (\l -> length l > 0) $ lines input
+        inputs = zip [0..] lines_
+    in
+        Data.List.intercalate "\n" $ map (\(k, input') -> runLine k input') inputs
 
 runLine :: Int -> String -> String 
 runLine k input = 
-    case Parser.runParser (Scanner.lineParser k) input of 
-        ("", Right tokens) -> show tokens
-        (remainder, Left error) -> show error
+    let 
+        prefix k  = "Line " ++ show k ++ ": " ++ input ++ " :: " 
+    in
+    case Scanner.line k input of 
+        ("", Right tokens) -> prefix k ++ Scanner.prettyPrint tokens
+        (remainder, Left error) -> prefix k ++  show error
+        _ -> prefix k ++ colorRed "Unexplained error"
     
 
+colorRed :: String -> String
+colorRed s = "\"\\u001b[31m" ++ s ++ "\\e[0m\""
 
 runFile :: String -> IO ()
-runFile filePath =
+runFile filePath = 
     do
     input <- TIO.readFile filePath 
     putStrLn $ run $ T.unpack input

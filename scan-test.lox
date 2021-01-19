@@ -1,0 +1,17 @@
+(2 + 3)/(-4 + 1) - 2*8.1
+[a, b, c]
+a, b.c; *.m
+a! != b7
+x = y
+true and false == false and true
+a > b >= c
+a < b <= c
+print ab7_9;
+var a = class B;
+if this then that else whatever;
+fun f(x) = {return x + 1};
+0 != nil
+for i = 1 
+while (i > 0) {i = i - 1}
+a.this = b.super
+
