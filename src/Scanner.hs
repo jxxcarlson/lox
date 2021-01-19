@@ -15,10 +15,10 @@ prettyPrint ts = intercalate ", " (map prettyPrintToken ts)
 
 data Token = Token { typ :: TokenType, lexeme :: String, tokenValue :: TokenValue, lineNumber :: Int} deriving Show
 
-data TokenValue = TSymbol | TString String | TNumber Double deriving Show
+data TokenValue = TSymbol | TString String | TNumber Double | TBool Bool | TNIL deriving Show
 
 data TokenType = LEFT_PAREN| RIGHT_PAREN| LEFT_BRACE| RIGHT_BRACE|
-  COMMA| DOT| MINUS| PLUS| SEMICOLON| SLASH| STAR|
+  COMMA| DOT| MINUS| UMINUS | PLUS| SEMICOLON| SLASH| STAR|
   -- One or two character tokens
   BANG| BANG_EQUAL|
   EQUAL| EQUAL_EQUAL|
@@ -33,13 +33,14 @@ data TokenType = LEFT_PAREN| RIGHT_PAREN| LEFT_BRACE| RIGHT_BRACE|
   deriving (Eq, Show)
 
 
-tokenParser k = choice "foo" [number k, leftParen k, rightParen k, leftBrace k, rightBrace k, comma k, dot k, minus k, plus k, semicolon k, 
+tokenParser k = choice "foo" [try (minus k), try (number k), unaryMinus k, leftParen k, rightParen k, leftBrace k, rightBrace k, comma k, dot k, plus k, semicolon k, 
                              slash k, star k, try (bangEqual k), bang k,  try (equalEqual k), equal k, try (greaterEqual k), greater k,  
                              try (lessEqual k), less k, 
                              keywordAnd k, keywordClass k, keywordElse k, keywordFalse k, keywordFun k, 
                              keywordFor k, keywordIf k, keywordNil k, keywordOr k, keywordPrint k, keywordReturn k, 
                              keywordSuper k, keywordThis k, keywordTrue k, keywordVar k, keywordWhile k,
-                             identifier_ k, stringLiteral k ]
+                             identifier_ k, 
+                             stringLiteral k ]
 
 
 -- parseLine :: Int -> String -> 
@@ -82,6 +83,10 @@ dot line_ = (\s -> Token { typ = DOT, lexeme = s, tokenValue = TSymbol,  lineNum
 minus :: Int -> Parser Token
 minus line_ = (\s -> Token { typ = MINUS, lexeme = s, tokenValue = TSymbol,  lineNumber = line_ }) <$> symbol "-"
 
+-- UMINUS
+unaryMinus :: Int -> Parser Token
+unaryMinus line_ = (\s -> Token { typ = UMINUS, lexeme = s, tokenValue = TSymbol,  lineNumber = line_ }) <$> symbol' "-"
+
 -- PLUS
 plus :: Int -> Parser Token
 plus line_ = (\s -> Token { typ = PLUS, lexeme = s, tokenValue = TSymbol,  lineNumber = line_ }) <$> symbol "+"
@@ -105,7 +110,7 @@ bangEqual line_ = (\s -> Token { typ = BANG_EQUAL, lexeme = s, tokenValue = TSym
 
 --  BANG
 bang :: Int -> Parser Token
-bang line_ = (\s -> Token { typ = BANG, lexeme = s, tokenValue = TSymbol,  lineNumber = line_ }) <$> symbol "!"
+bang line_ = (\s -> Token { typ = BANG, lexeme = s, tokenValue = TSymbol,  lineNumber = line_ }) <$> symbol' "!"
 
 --  EQUAL_EQUAL
 equalEqual :: Int -> Parser Token
@@ -134,8 +139,6 @@ lessEqual line_ = (\s -> Token { typ = LESS_EQUAL, lexeme = s, tokenValue = TSym
 less :: Int -> Parser Token
 less line_ = (\s -> Token { typ = LESS, lexeme = s, tokenValue = TSymbol,  lineNumber = line_ }) <$> symbol "<"
 
-
--- IDENTIFIER| STRING| NUMBER|
 
 -- NUMBER
 positiveNumber :: Int -> Parser Token
@@ -177,7 +180,7 @@ keywordElse k = (\s -> Token { typ = ELSE, lexeme = s, tokenValue = TString s,  
 
 -- FALSE 
 keywordFalse :: Int -> Parser Token
-keywordFalse k = (\s -> Token { typ = FALSE, lexeme = s, tokenValue = TString s,  lineNumber = k }) <$>  try (symbol "false")
+keywordFalse k = (\s -> Token { typ = FALSE, lexeme = s, tokenValue = TBool False,  lineNumber = k }) <$>  try (symbol "false")
 
 -- FUN
 keywordFun :: Int -> Parser Token
@@ -193,7 +196,7 @@ keywordIf k = (\s -> Token { typ = IF, lexeme = s, tokenValue = TString s,  line
 
 -- NIL
 keywordNil :: Int -> Parser Token
-keywordNil k = (\s -> Token { typ = NIL, lexeme = s, tokenValue = TString s,  lineNumber = k }) <$>  try (symbol "nil")
+keywordNil k = (\s -> Token { typ = NIL, lexeme = s, tokenValue = TNIL,  lineNumber = k }) <$>  try (symbol "nil")
 
 
 -- OR
@@ -218,7 +221,7 @@ keywordThis k = (\s -> Token { typ = THIS, lexeme = s, tokenValue = TString s,  
 
 -- TRUE
 keywordTrue :: Int -> Parser Token
-keywordTrue k = (\s -> Token { typ = TRUE, lexeme = s, tokenValue = TString s,  lineNumber = k }) <$>  try (symbol "true")
+keywordTrue k = (\s -> Token { typ = TRUE, lexeme = s, tokenValue = TBool True,  lineNumber = k }) <$>  try (symbol "true")
 
 -- VAR
 keywordVar :: Int -> Parser Token

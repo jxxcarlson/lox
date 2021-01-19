@@ -6,24 +6,57 @@ newtype Parser a b = Parser {
   runParser :: [a] -> ([a], Either ParseError b)
 }
 
-number :: Parser Token Expression
-number = Parser $ \input -> 
+-- unary :: Parser Token Expression
+-- unary = Parser $ \input -> 
+--   let 
+--       (t:ts) = input
+--   in
+
+expression :: Parser Token Expression
+expression = primitive
+
+skip :: TokenType -> Parser Token Expression
+skip tt = Parser $ \input ->
+    let 
+        (t:ts) = input
+    in
+        if typ t == tt then
+            (ts, Right (Primitive UNIT))
+        else
+            (ts, Left ParseError {lineNo = Scanner.lineNumber t, message = "Expecting ("})
+
+-- group :: Parser Token Expression 
+-- group = skip LEFT_PAREN >> expression <* (skip RIGHT_PAREN)    
+ 
+
+
+primitive :: Parser Token Expression
+primitive = Parser $ \input -> 
   let 
       (t:ts) = input
   in
       if typ t == NUMBER then
-        (ts, Right (toLiteral $ tokenValue t))
-        -- (ts, Right (makeNumber 1))
+        (ts, Right (toPrimitive $ tokenValue t))
+      else if typ t == STRING then
+        (ts, Right (toPrimitive $ tokenValue t))
+      else if typ t == TRUE then
+        (ts, Right (toPrimitive $ tokenValue t))
+      else if typ t == FALSE then
+        (ts, Right (toPrimitive $ tokenValue t))
+      else if typ t == NIL then
+        (ts, Right (toPrimitive $ tokenValue t))
       else
-      ([], Left $ ParseError {lineNo = Scanner.lineNumber t, message = "Error on NUMBER"})
-   
+       (ts, Left $ ParseError {lineNo = Scanner.lineNumber t, message = "Expecting primitive"})
+    
 
-toLiteral :: TokenValue -> Expression
-toLiteral tv = 
+toPrimitive :: TokenValue -> Expression
+toPrimitive tv = 
     case tv of
-        TSymbol -> Literal NIL_
-        TString s -> Literal (STR s)
-        TNumber x -> Literal (Number x)
+        TSymbol -> Primitive NIL_
+        TString s -> Primitive (STR s)
+        TNumber x -> Primitive (Number x)
+        TBool b -> Primitive (BoolVal b)
+        TNIL -> Primitive NIL_
 
 
 
@@ -34,10 +67,10 @@ dummyError = ParseError { lineNo = 0, message = "Nothing here yet"}
 
 -- SYNTAX TREE
 
-data Expression = Literal LiteralValue | Unary UnaryValue | Binary BinaryValue | Group Expression
+data Expression = Primitive PrimitiveValue | Unary UnaryValue | Binary BinaryValue | Group Expression
    deriving Show 
 
-data LiteralValue = Number Double | STR String | NIL_
+data PrimitiveValue = Number Double | BoolVal Bool | STR String | NIL_ | UNIT
    deriving Show
 
 data UnaryValue = UnaryValue {op :: UnaryOp, uexpr :: Expression}
@@ -69,10 +102,12 @@ data UnaryOp = UMinus | UBang
 prettyPrint :: Expression -> String
 prettyPrint expr = 
     case expr of 
-        Literal litVal -> 
-            case litVal of 
+        Primitive primVal -> 
+            case primVal of 
                 Number x -> show x
                 STR s -> s
+                BoolVal b -> show b
+                NIL_ -> "nil"
         Unary uVal -> prettyPrintUnaryOp (op uVal) ++ Parser.prettyPrint (uexpr uVal)
         Binary bVal -> Parser.prettyPrint (leftExpr bVal) ++ " " ++ prettyPrintBinop (binop bVal) ++ " " ++ Parser.prettyPrint (rightExpr bVal)
         Group e -> "(" ++ Parser.prettyPrint e ++ ")"
@@ -102,11 +137,8 @@ prettyPrintBinop binop =
 
 
 makeNumber :: Double -> Expression
-makeNumber x = Literal (Number x)
+makeNumber x = Primitive (Number x)
 
 makeString :: String -> Expression
-makeString str = Literal (STR str)
-
-expression :: [Token] -> Either ParseError Expression
-expression tokens = Left dummyError
+makeString str = Primitive (STR str)
 

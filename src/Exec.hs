@@ -46,23 +46,30 @@ run input =
         Data.List.intercalate "\n" $ map (\(k, input') -> runLine' k input') inputs
 
 runLine :: Int -> String -> String
-runLine k input = 
-    case Scanner.line k $ trimLeadingSpaces input of 
+runLine k input_ = 
+    let 
+      input = trimLeadingSpaces $ input_ ++ " "
+    in
+    case Scanner.line k input of 
         ("", Right tokens) -> prefixLine k (cyan input) ++ Scanner.prettyPrint tokens
         (remainder, Left error) -> prefixLine k (cyan input) ++ red (show error)
         _ -> prefixLine k (cyan input) ++ red "Unexplained error"
 
 runLine' :: Int -> String -> String
-runLine' k input = 
+runLine' k input_ = 
+    let 
+      input = trimLeadingSpaces $ input_ ++ " "
+    in
     case Scanner.line k $ trimLeadingSpaces input of 
         ("", Right tokens) -> -- prefixLine k (cyan input) ++ Scanner.prettyPrint tokens
-           case EP.runParser EP.number tokens of 
-               ([], Right e) -> prefixLine k (cyan input) ++ EP.prettyPrint e
-               (ts', Left error') -> prefixLine k (cyan input) ++ red (show error')
+           case EP.runParser EP.expression tokens of 
+               ([], Right e) -> prefixLine k (cyan input) ++ " : " ++ (magenta $ Scanner.prettyPrint tokens) ++ " : " ++ EP.prettyPrint e
+               (ts', Left error') -> prefixLine k (cyan input) ++ " : " ++ (magenta $ Scanner.prettyPrint tokens) ++ " : " ++ red (show error')
+               _ -> prefixLine k (cyan input) ++ " : " ++ (magenta $ Scanner.prettyPrint tokens) ++ " : " ++ red "Unexplained error"
         (remainder, Left error) -> prefixLine k (cyan input) ++ red (show error)
-        _ -> prefixLine k (cyan input) ++ red "Unexplained error"
+        _ -> prefixLine k (cyan input) ++ red "Expression Parser: error"
 
-
+ 
 black :: String -> String
 black str = "\x1b[30m" ++ str ++ "\x1b[0m"
 
