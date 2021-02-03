@@ -101,7 +101,7 @@ slash line_ = (\s -> Token { typ = SLASH, lexeme = s, tokenValue = TSymbol,  lin
 
 --  STAR
 star :: Int -> Parser Token
-star line_ = (\s -> Token { typ = SLASH, lexeme = s, tokenValue = TSymbol,  lineNumber = line_ }) <$> symbol' "*"
+star line_ = (\s -> Token { typ = STAR, lexeme = s, tokenValue = TSymbol,  lineNumber = line_ }) <$> symbol' "*"
 
 --  BANG_EQUAL
 bangEqual :: Int -> Parser Token

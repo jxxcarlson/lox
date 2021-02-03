@@ -5,6 +5,15 @@ import Scanner
 t0 = Token {typ = NIL, lexeme = "nil ", tokenValue = TNIL, lineNumber = 0}
 t1 = Token {typ = NUMBER, lexeme = "5", tokenValue = TNumber 5.0, lineNumber = 2}
 
+-- > TP.runParser (TP.satisfy "looking for +" (\t -> typ t == STAR)) [TP.t2]
+-- ([],Right (Token {typ = STAR, lexeme = "*", tokenValue = TSymbol, lineNumber = 2}))
+--
+-- > TP.runParser (TP.satisfy "looking for +" (\t -> typ t == STAR)) [TP.t1]
+-- ([Token {typ = NUMBER, lexeme = "5", tokenValue = TNumber 5.0, lineNumber = 2}],Left (ParseError {lineNo = 0, message = "looking for +", tokens = []}))
+t2 = Token {typ = STAR, lexeme = "*", tokenValue = TSymbol, lineNumber = 2}
+
+ 
+
 newtype Parser a = Parser {
   runParser :: [Token] -> ([Token], Either ParseError a)
 }

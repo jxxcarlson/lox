@@ -14,7 +14,15 @@ expression = primary
 
 -- unary = 
 
-primary = choice "group or primary" [try primitive, group]
+-- factorOp = TokenParser.choice [ times_, slash_]
+
+-- times_ = satisfy "expecting +" (\t -> typ t == STAR)
+-- slash_ = satisfy "expecting /" (\t -> typ t == SLASH)
+
+
+
+primary :: Parser Expression
+primary = TokenParser.choice "group or primary" [try primitive, group]
 
 group :: Parser Expression 
 group = fmap Group ( skip LEFT_PAREN >> expression <* (skip RIGHT_PAREN) )   
