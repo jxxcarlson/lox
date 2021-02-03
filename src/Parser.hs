@@ -1,36 +1,25 @@
 module Parser where
 
 import Scanner
+import TokenParser
 
-newtype Parser a b = Parser {
-  runParser :: [a] -> ([a], Either ParseError b)
-}
 
 -- unary :: Parser Token Expression
 -- unary = Parser $ \input -> 
---   let 
---       (t:ts) = input
---   in
-
-expression :: Parser Token Expression
-expression = primitive
-
-skip :: TokenType -> Parser Token Expression
-skip tt = Parser $ \input ->
-    let 
-        (t:ts) = input
-    in
-        if typ t == tt then
-            (ts, Right (Primitive UNIT))
-        else
-            (ts, Left ParseError {lineNo = Scanner.lineNumber t, message = "Expecting ("})
-
--- group :: Parser Token Expression 
--- group = skip LEFT_PAREN >> expression <* (skip RIGHT_PAREN)    
- 
+  
 
 
-primitive :: Parser Token Expression
+expression :: Parser Expression
+expression = primary
+
+-- unary = 
+
+primary = choice "group or primary" [try primitive, group]
+
+group :: Parser Expression 
+group = fmap Group ( skip LEFT_PAREN >> expression <* (skip RIGHT_PAREN) )   
+
+primitive :: Parser Expression
 primitive = Parser $ \input -> 
   let 
       (t:ts) = input
@@ -46,8 +35,18 @@ primitive = Parser $ \input ->
       else if typ t == NIL then
         (ts, Right (toPrimitive $ tokenValue t))
       else
-       (ts, Left $ ParseError {lineNo = Scanner.lineNumber t, message = "Expecting primitive"})
-    
+       (ts, Left $ ParseError {lineNo = Scanner.lineNumber t, message = "Expecting primitive", tokens = input})
+
+-- HELPER    
+skip :: TokenType -> Parser Expression
+skip tt = Parser $ \input ->
+    let 
+        (t:ts) = input
+    in
+        if typ t == tt then
+            (ts, Right (Primitive UNIT))
+        else
+            (ts, Left ParseError {lineNo = Scanner.lineNumber t, message = "Expecting " ++ show tt ++ ", actual = " ++ show (typ t), tokens = input})
 
 toPrimitive :: TokenValue -> Expression
 toPrimitive tv = 
@@ -60,10 +59,9 @@ toPrimitive tv =
 
 
 
-data ParseError = ParseError { lineNo :: Int, message :: String} deriving Show
 
 dummyError :: ParseError
-dummyError = ParseError { lineNo = 0, message = "Nothing here yet"}
+dummyError = ParseError { lineNo = 0, message = "Nothing here yet", tokens = []}
 
 -- SYNTAX TREE
 

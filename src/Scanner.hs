@@ -13,9 +13,9 @@ prettyPrint :: [Token] -> String
 prettyPrint ts = intercalate ", " (map prettyPrintToken ts)
 
 
-data Token = Token { typ :: TokenType, lexeme :: String, tokenValue :: TokenValue, lineNumber :: Int} deriving Show
+data Token = Token { typ :: TokenType, lexeme :: String, tokenValue :: TokenValue, lineNumber :: Int} deriving (Show, Eq)
 
-data TokenValue = TSymbol | TString String | TNumber Double | TBool Bool | TNIL deriving Show
+data TokenValue = TSymbol | TString String | TNumber Double | TBool Bool | TNIL deriving (Show, Eq)
 
 data TokenType = LEFT_PAREN| RIGHT_PAREN| LEFT_BRACE| RIGHT_BRACE|
   COMMA| DOT| MINUS| UMINUS | PLUS| SEMICOLON| SLASH| STAR|

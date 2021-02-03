@@ -13,6 +13,7 @@ import Data.List
 import Data.List.NonEmpty (fromList)
 
 import ParserTools
+import qualified TokenParser
 import Scanner
 import qualified Parser as EP -- Expressions Parser
  
@@ -62,8 +63,8 @@ runLine' k input_ =
     in
     case Scanner.line k $ trimLeadingSpaces input of 
         ("", Right tokens) -> -- prefixLine k (cyan input) ++ Scanner.prettyPrint tokens
-           case EP.runParser EP.expression tokens of 
-               ([], Right e) -> prefixLine k (cyan input) ++ " : " ++ (magenta $ Scanner.prettyPrint tokens) ++ " : " ++ EP.prettyPrint e
+           case TokenParser.runParser EP.expression tokens of 
+               ([], Right e) -> prefixLine k (cyan input) ++ " : " ++ (magenta $ Scanner.prettyPrint tokens) ++ " : " ++ show e --EP.prettyPrint e
                (ts', Left error') -> prefixLine k (cyan input) ++ " : " ++ (magenta $ Scanner.prettyPrint tokens) ++ " : " ++ red (show error')
                _ -> prefixLine k (cyan input) ++ " : " ++ (magenta $ Scanner.prettyPrint tokens) ++ " : " ++ red "Unexplained error"
         (remainder, Left error) -> prefixLine k (cyan input) ++ red (show error)
