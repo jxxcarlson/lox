@@ -2,18 +2,29 @@ module Parser where
 
 import Scanner (TokenType(..), TokenValue(..), Token(..), prettyPrint)
 import TokenParser
+    ( ParseError(..), Parser(Parser), satisfy, try, choice )
 
+
+-- unary :: Parser Expression
+-- unary = choice "unary" [(unaryHelper <$> uminusOp), primary]
 
 unary :: Parser Expression
-unary = choice "foo" [(unaryHelper <$> uminusOp), primary]
+unary = choice "unary" [unaryOp >>= unary_, primary]
 
-  --uminusOp >>= (unary <|> primitive) . unaryHelper
+  -- uminusOp >>= (unary <|> primitive) . unaryHelper
   -- (unaryHelper <$> uminusOp) >>= unary <|> primitive
 
 
+unaryOp = choice "unaryOp" [factorOp, bang]
 
--- basicUnary :: Parser Expression
--- basicUnary = uminusOp >>= (\tok -> ) 
+unary_ :: Token -> Parser Expression
+unary_ token = unaryHelper' token <$> unary
+
+
+unaryHelper' :: Token -> Expression -> Expression
+unaryHelper' tok expr = case typ tok of 
+  UMINUS -> Unary UnaryValue { op = UMinus, uexpr = expr}
+  BANG  -> Unary UnaryValue { op = UBang, uexpr = expr}
 
 
 unaryHelper :: Token -> Expression
@@ -48,7 +59,7 @@ slash = satisfy "times, expecting /" (\t -> typ t == SLASH)
 
 
 primary :: Parser Expression
-primary = TokenParser.choice "group or primary" [try primitive, group]
+primary = TokenParser.choice "group or primary" [try group, primitive]
 
 group :: Parser Expression 
 group = fmap Group ( skip LEFT_PAREN >> expression <* (skip RIGHT_PAREN) )   

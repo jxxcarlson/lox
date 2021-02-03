@@ -4,9 +4,9 @@ false
 true
 nil
 "foo"
-foo
 (1)
 (-2)
 (nil)
 !false
+!!false
 -(2)
