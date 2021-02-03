@@ -15,7 +15,7 @@ unary = choice "unary" [unaryOp >>= unary_, primary]
   -- (unaryHelper <$> uminusOp) >>= unary <|> primitive
 
 
-unaryOp = choice "unaryOp" [factorOp, bang]
+unaryOp = choice "unaryOp" [uminus, bang]
 
 unary_ :: Token -> Parser Expression
 unary_ token = unaryHelper' token <$> unary
