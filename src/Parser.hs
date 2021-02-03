@@ -29,6 +29,11 @@ data UnaryOp = UMinus | UBang
 expression :: Parser Expression
 expression = unary
 
+-- BINARY
+
+factorOp :: Parser Token
+factorOp = TokenParser.choice "expecting factorOp" [ times, slash]
+
 -- UNARY
 
 unary :: Parser Expression
@@ -37,24 +42,15 @@ unary = choice "unary" [unaryOp >>= unary_, primary]
 unaryOp = choice "unaryOp" [uminus, bang]
 
 unary_ :: Token -> Parser Expression
-unary_ token = unaryHelper' token <$> unary
+unary_ token = unaryMapper token <$> unary
 
-
-unaryHelper' :: Token -> Expression -> Expression
-unaryHelper' tok expr = case typ tok of 
+unaryMapper :: Token -> Expression -> Expression
+unaryMapper tok expr = case typ tok of 
   UMINUS -> Unary UnaryValue { op = UMinus, uexpr = expr}
   BANG  -> Unary UnaryValue { op = UBang, uexpr = expr}
 
-unaryHelper :: Token -> Expression
-unaryHelper tok = case typ tok of 
-  UMINUS -> Unary UnaryValue { op = UMinus, uexpr = Primitive $ Number 3.20}
-  BANG  -> Unary UnaryValue { op = UBang, uexpr = Primitive $ BoolVal True}
-
 uminusOp :: Parser Token
 uminusOp = choice "uminusOp" [uminus, bang]
-
-factorOp :: Parser Token
-factorOp = TokenParser.choice "expecting factorOp" [ times, slash]
 
 uminus :: Parser Token
 uminus = satisfy "uminus, expecting -" (\t -> typ t == UMINUS)
