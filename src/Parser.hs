@@ -12,12 +12,23 @@ import TokenParser
 expression :: Parser Expression
 expression = primary
 
--- unary = 
 
--- factorOp = TokenParser.choice [ times_, slash_]
+-- unary = ( "!" | "-" ) unary | primary ;
 
--- times_ = satisfy "expecting +" (\t -> typ t == STAR)
--- slash_ = satisfy "expecting /" (\t -> typ t == SLASH)
+uminusOp :: Parser Token
+uminusOp = choice "uminusOp" [uminus, bang_]
+
+-- factorOp :: Parser Token
+-- factorOp = TokenParser.choice "expecting factorOp" [ times_, slash_]
+
+uminus = satisfy "uminus, expecting -" (\t -> typ t == UMINUS)
+bang_ = satisfy "banb, expecting !" (\t -> typ t == BANG)
+
+times_ :: Parser Token
+times_ = satisfy "expecting +" (\t -> typ t == STAR)
+
+slash_ :: Parser Token
+slash_ = satisfy "expecting /" (\t -> typ t == SLASH)
 
 
 

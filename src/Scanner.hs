@@ -39,8 +39,7 @@ tokenParser k = choice "foo" [try (minus k), try (number k), unaryMinus k, leftP
                              keywordAnd k, keywordClass k, keywordElse k, keywordFalse k, keywordFun k, 
                              keywordFor k, keywordIf k, keywordNil k, keywordOr k, keywordPrint k, keywordReturn k, 
                              keywordSuper k, keywordThis k, keywordTrue k, keywordVar k, keywordWhile k,
-                             identifier_ k, 
-                             stringLiteral k ]
+                             stringLiteral k, identifier_ k]
 
 
 -- parseLine :: Int -> String -> 

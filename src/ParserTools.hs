@@ -178,7 +178,7 @@ restOfString = many (satisfy "restOfString" (\c -> c /= '\"'))
 
 foo = satisfy "foo" (\c -> c /= ' ')
 
-literalString = quotationMark >> restOfString
+literalString = quotationMark >> restOfString <*quotationMark
 
 integerDigits = (pSequence [nonzeroDigit, digits]) <* spaces
 

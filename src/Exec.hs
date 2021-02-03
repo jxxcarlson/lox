@@ -52,9 +52,8 @@ runLine k input_ =
       input = trimLeadingSpaces $ input_ ++ " "
     in
     case Scanner.line k input of 
-        ("", Right tokens) -> prefixLine k (cyan input) ++ Scanner.prettyPrint tokens
+        (_, Right tokens) -> prefixLine k (cyan input) ++ Scanner.prettyPrint tokens
         (remainder, Left error) -> prefixLine k (cyan input) ++ red (show error)
-        _ -> prefixLine k (cyan input) ++ red "Unexplained error"
 
 runLine' :: Int -> String -> String
 runLine' k input_ = 
@@ -62,14 +61,12 @@ runLine' k input_ =
       input = trimLeadingSpaces $ input_ ++ " "
     in
     case Scanner.line k $ trimLeadingSpaces input of 
-        ("", Right tokens) -> -- prefixLine k (cyan input) ++ Scanner.prettyPrint tokens
+        (_, Right tokens) -> -- prefixLine k (cyan input) ++ Scanner.prettyPrint tokens
            case TokenParser.runParser EP.expression tokens of 
                ([], Right e) -> prefixLine k (cyan input) ++ " : " ++ (magenta $ Scanner.prettyPrint tokens) ++ " : " ++ show e --EP.prettyPrint e
                (ts', Left error') -> prefixLine k (cyan input) ++ " : " ++ (magenta $ Scanner.prettyPrint tokens) ++ " : " ++ red (show error')
                _ -> prefixLine k (cyan input) ++ " : " ++ (magenta $ Scanner.prettyPrint tokens) ++ " : " ++ red "Unexplained error"
         (remainder, Left error) -> prefixLine k (cyan input) ++ red (show error)
-        _ -> prefixLine k (cyan input) ++ red "Expression Parser: error"
-
  
 black :: String -> String
 black str = "\x1b[30m" ++ str ++ "\x1b[0m"
