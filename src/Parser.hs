@@ -4,16 +4,35 @@ import Scanner (TokenType(..), TokenValue(..), Token(..), prettyPrint)
 import TokenParser
     ( ParseError(..), Parser(Parser), satisfy, try, choice )
 
+-- SYNTAX TREE
 
--- unary :: Parser Expression
--- unary = choice "unary" [(unaryHelper <$> uminusOp), primary]
+data Expression = Primitive PrimitiveValue | Unary UnaryValue | Binary BinaryValue | Group Expression
+   deriving Show 
+
+data PrimitiveValue = Number Double | BoolVal Bool | STR String | NIL_ | UNIT
+   deriving Show
+
+data UnaryValue = UnaryValue {op :: UnaryOp, uexpr :: Expression}
+   deriving Show
+
+data BinaryValue = BinaryValue {leftExpr :: Expression, binop :: BinaryOp, rightExpr :: Expression}
+   deriving Show
+
+data BinaryOp = BEqual | BNotEqual | BLess | BLessEqual | BGreater | BGreaterEqual | BPlus | BMinus | BTimes | BDiv 
+  deriving Show
+
+data UnaryOp = UMinus | UBang 
+  deriving Show
+
+-- TOP LEVEL PARSER
+
+expression :: Parser Expression
+expression = unary
+
+-- UNARY
 
 unary :: Parser Expression
 unary = choice "unary" [unaryOp >>= unary_, primary]
-
-  -- uminusOp >>= (unary <|> primitive) . unaryHelper
-  -- (unaryHelper <$> uminusOp) >>= unary <|> primitive
-
 
 unaryOp = choice "unaryOp" [uminus, bang]
 
@@ -26,17 +45,10 @@ unaryHelper' tok expr = case typ tok of
   UMINUS -> Unary UnaryValue { op = UMinus, uexpr = expr}
   BANG  -> Unary UnaryValue { op = UBang, uexpr = expr}
 
-
 unaryHelper :: Token -> Expression
 unaryHelper tok = case typ tok of 
   UMINUS -> Unary UnaryValue { op = UMinus, uexpr = Primitive $ Number 3.20}
   BANG  -> Unary UnaryValue { op = UBang, uexpr = Primitive $ BoolVal True}
-
-expression :: Parser Expression
-expression = unary
-
-
--- unary = ( "!" | "-" ) unary | primary ;
 
 uminusOp :: Parser Token
 uminusOp = choice "uminusOp" [uminus, bang]
@@ -56,7 +68,7 @@ times = satisfy "times, expecting +" (\t -> typ t == STAR)
 slash :: Parser Token
 slash = satisfy "times, expecting /" (\t -> typ t == SLASH)
 
-
+-- PRIMARY
 
 primary :: Parser Expression
 primary = TokenParser.choice "group or primary" [try group, primitive]
@@ -82,7 +94,8 @@ primitive = Parser $ \input ->
       else
        (ts, Left $ ParseError {lineNo = Scanner.lineNumber t, message = "Expecting primitive", tokens = input})
 
--- HELPER    
+-- HELPERS
+
 skip :: TokenType -> Parser Expression
 skip tt = Parser $ \input ->
     let 
@@ -107,31 +120,6 @@ toPrimitive tv =
 
 dummyError :: ParseError
 dummyError = ParseError { lineNo = 0, message = "Nothing here yet", tokens = []}
-
--- SYNTAX TREE
-
-data Expression = Primitive PrimitiveValue | Unary UnaryValue | Binary BinaryValue | Group Expression
-   deriving Show 
-
-data PrimitiveValue = Number Double | BoolVal Bool | STR String | NIL_ | UNIT
-   deriving Show
-
-data UnaryValue = UnaryValue {op :: UnaryOp, uexpr :: Expression}
-   deriving Show
-
-data BinaryValue = BinaryValue {leftExpr :: Expression, binop :: BinaryOp, rightExpr :: Expression}
-   deriving Show
-
-data BinaryOp = BEqual | BNotEqual | BLess | BLessEqual | BGreater | BGreaterEqual | BPlus | BMinus | BTimes | BDiv 
-  deriving Show
-
-data UnaryOp = UMinus | UBang 
-  deriving Show
-
--- PARSER
-
-
-
 
 -- PRETTY PRINTER
 
