@@ -21,9 +21,9 @@ group = fmap Group ( skip LEFT_PAREN >> expression <* (skip RIGHT_PAREN) )
 
 primitive :: Parser Expression
 primitive = Parser $ \input -> 
-  let 
-      (t:ts) = input
-  in
+  case input of 
+    [] -> ([], Left $ ParseError {lineNo = -1, message = "empty input", tokens = []})
+    (t:ts) ->
       if typ t == NUMBER then
         (ts, Right (toPrimitive $ tokenValue t))
       else if typ t == STRING then

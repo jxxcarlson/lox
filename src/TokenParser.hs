@@ -9,15 +9,12 @@ newtype Parser a = Parser {
   runParser :: [Token] -> ([Token], Either ParseError a)
 }
 
-data ParseError = ParseError { message :: String, tokens :: [Token] } deriving Show
+data ParseError = ParseError { lineNo :: Int, message :: String, tokens :: [Token] } deriving Show
 
 any :: Parser Token
 any = Parser $ \input -> case input of
   (x:xs) -> (xs, Right x)
-  []     -> ([], Left $ ParseError
-    "any character"        -- expected
-    [] -- encountered
-   )
+  []     -> ([], Left $ ParseError { lineNo = 0, message = "", tokens = []})
 
 satisfy :: String -> (Token -> Bool) -> Parser Token
 satisfy description predicate = try $ do
@@ -28,7 +25,7 @@ satisfy description predicate = try $ do
 
 parseError :: String -> a -> Parser a 
 parseError description x =
-    Parser $ \input -> (input, Left $ ParseError description input)
+    Parser $ \input -> (input, Left $ ParseError 0 description input)
    
 
 try :: Parser a -> Parser a
@@ -50,7 +47,7 @@ choice description ps = foldr (<|>) noMatch ps
 
 parseError' :: Parser a 
 parseError' =
-    Parser $ \input -> (input, Left $ TokenParser.ParseError {message = "No match", tokens = input})
+    Parser $ \input -> (input, Left $ TokenParser.ParseError {lineNo = 0, message = "No match", tokens = input})
 
 
 fmap_ :: (a -> b) -> Parser a -> Parser b
