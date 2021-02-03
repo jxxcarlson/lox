@@ -4,6 +4,18 @@ import Scanner (TokenType(..), TokenValue(..), Token(..), prettyPrint)
 import TokenParser
     ( ParseError(..), Parser(Parser), satisfy, try, choice )
 
+{- GRAMMAR
+
+expression     → equality ;
+equality       → comparison ( ( "!=" | "==" ) comparison )* ;
+comparison     → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
+term           → factor ( ( "-" | "+" ) factor )* ;
+factor         → unary ( ( "/" | "*" ) unary )* ;
+unary          → ( "!" | "-" ) unary | primary ;
+primary        → NUMBER | STRING | "true" | "false" | "nil" | "(" expression ")" ;
+
+-}
+
 -- SYNTAX TREE
 
 data Expression = Primitive PrimitiveValue | Unary UnaryValue | Binary BinaryValue | Group Expression
@@ -24,12 +36,33 @@ data BinaryOp = BEqual | BNotEqual | BLess | BLessEqual | BGreater | BGreaterEqu
 data UnaryOp = UMinus | UBang 
   deriving Show
 
+
+binaryOpOfToken :: Token -> BinaryOp
+binaryOpOfToken tok = 
+     case typ tok of 
+       MINUS -> BMinus
+       PLUS -> BPlus
+       STAR -> BTimes
+       SLASH -> BDiv
+       EQUAL_EQUAL -> BEqual
+       GREATER -> BGreater
+       GREATER_EQUAL -> BGreaterEqual
+       LESS -> BLess
+       LESS_EQUAL -> BLessEqual
+
+
 -- TOP LEVEL PARSER
 
 expression :: Parser Expression
 expression = unary
 
 -- BINARY
+
+factorWith :: Expression -> Parser Expression
+factorWith expr = do
+    op <- factorOp
+    u <- unary
+    return (Binary $ BinaryValue {leftExpr = expr, binop = binaryOpOfToken op, rightExpr = u})
 
 factorOp :: Parser Token
 factorOp = TokenParser.choice "expecting factorOp" [ times, slash]
@@ -39,6 +72,7 @@ factorOp = TokenParser.choice "expecting factorOp" [ times, slash]
 unary :: Parser Expression
 unary = choice "unary" [unaryOp >>= unary_, primary]
 
+unaryOp :: Parser Token
 unaryOp = choice "unaryOp" [uminus, bang]
 
 unary_ :: Token -> Parser Expression
