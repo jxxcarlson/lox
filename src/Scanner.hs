@@ -1,4 +1,4 @@
-module Scanner where 
+module Scanner (TokenType(..), TokenValue(..), Token(..), prettyPrint, Scanner.line) where 
 
 import ParserTools
 import Data.List

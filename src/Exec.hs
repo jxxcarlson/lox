@@ -63,9 +63,8 @@ runLine' k input_ =
     case Scanner.line k $ trimLeadingSpaces input of 
         (_, Right tokens) -> -- prefixLine k (cyan input) ++ Scanner.prettyPrint tokens
            case TokenParser.runParser EP.expression tokens of 
-               ([], Right e) -> prefixLine k (cyan input) ++ " : " ++ (magenta $ Scanner.prettyPrint tokens) ++ " : " ++ show e --EP.prettyPrint e
+               (_, Right e) -> prefixLine k (cyan input) ++ " : " ++ (magenta $ Scanner.prettyPrint tokens) ++ " : " ++ show e --EP.prettyPrint e
                (ts', Left error') -> prefixLine k (cyan input) ++ " : " ++ (magenta $ Scanner.prettyPrint tokens) ++ " : " ++ red (show error')
-               _ -> prefixLine k (cyan input) ++ " : " ++ (magenta $ Scanner.prettyPrint tokens) ++ " : " ++ red "Unexplained error"
         (remainder, Left error) -> prefixLine k (cyan input) ++ red (show error)
  
 black :: String -> String

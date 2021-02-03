@@ -1,6 +1,6 @@
 module TokenParser where 
 
-import Scanner
+import Scanner (Token(..), TokenType(..), TokenValue(..))
 
 t0 = Token {typ = NIL, lexeme = "nil ", tokenValue = TNIL, lineNumber = 0}
 t1 = Token {typ = NUMBER, lexeme = "5", tokenValue = TNumber 5.0, lineNumber = 2}

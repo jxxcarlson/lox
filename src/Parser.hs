@@ -1,34 +1,49 @@
 module Parser where
 
-import Scanner
+import Scanner (TokenType(..), TokenValue(..), Token(..), prettyPrint)
 import TokenParser
 
 
--- unary :: Parser Token Expression
--- unary = Parser $ \input -> 
-  
+unary :: Parser Expression
+unary = choice "foo" [(unaryHelper <$> uminusOp), primary]
 
+  --uminusOp >>= (unary <|> primitive) . unaryHelper
+  -- (unaryHelper <$> uminusOp) >>= unary <|> primitive
+
+
+
+-- basicUnary :: Parser Expression
+-- basicUnary = uminusOp >>= (\tok -> ) 
+
+
+unaryHelper :: Token -> Expression
+unaryHelper tok = case typ tok of 
+  UMINUS -> Unary UnaryValue { op = UMinus, uexpr = Primitive $ Number 3.20}
+  BANG  -> Unary UnaryValue { op = UBang, uexpr = Primitive $ BoolVal True}
 
 expression :: Parser Expression
-expression = primary
+expression = unary
 
 
 -- unary = ( "!" | "-" ) unary | primary ;
 
 uminusOp :: Parser Token
-uminusOp = choice "uminusOp" [uminus, bang_]
+uminusOp = choice "uminusOp" [uminus, bang]
 
--- factorOp :: Parser Token
--- factorOp = TokenParser.choice "expecting factorOp" [ times_, slash_]
+factorOp :: Parser Token
+factorOp = TokenParser.choice "expecting factorOp" [ times, slash]
 
+uminus :: Parser Token
 uminus = satisfy "uminus, expecting -" (\t -> typ t == UMINUS)
-bang_ = satisfy "banb, expecting !" (\t -> typ t == BANG)
 
-times_ :: Parser Token
-times_ = satisfy "expecting +" (\t -> typ t == STAR)
+bang :: Parser Token
+bang = satisfy "bang, expecting !" (\t -> typ t == BANG)
 
-slash_ :: Parser Token
-slash_ = satisfy "expecting /" (\t -> typ t == SLASH)
+times :: Parser Token
+times = satisfy "times, expecting +" (\t -> typ t == STAR)
+
+slash :: Parser Token
+slash = satisfy "times, expecting /" (\t -> typ t == SLASH)
 
 
 
