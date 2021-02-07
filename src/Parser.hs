@@ -61,9 +61,9 @@ expression = factor
 
 
 
--- factor :: Parser Expression
--- factor = unary >>= concatM []
--- -- factor = unary >>= concatM [factorWith, factorWith]
+factor :: Parser Expression
+factor = unary >>= concatM [factorWith]
+-- factor = unary >>= concatM [factorWith, factorWith]
 -- factor = unary >>= factorWith
 
 
@@ -78,8 +78,8 @@ expression = factor
 
 
 
-factor = unary >>= factorWith
-
+-- factor :: Parser Expression
+-- factor = unary >>= factorWith
 
 factorWith :: Expression -> Parser Expression
 factorWith expr = do
