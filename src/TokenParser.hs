@@ -12,7 +12,6 @@ t1 = Token {typ = NUMBER, lexeme = "5", tokenValue = TNumber 5.0, lineNumber = 2
 -- ([Token {typ = NUMBER, lexeme = "5", tokenValue = TNumber 5.0, lineNumber = 2}],Left (ParseError {lineNo = 0, message = "looking for +", tokens = []}))
 t2 = Token {typ = STAR, lexeme = "*", tokenValue = TSymbol, lineNumber = 2}
 
- 
 
 newtype Parser a = Parser {
   runParser :: [Token] -> ([Token], Either ParseError a)
@@ -54,6 +53,14 @@ choice :: String -> [Parser a] -> Parser a
 choice description ps = foldr (<|>) noMatch ps
   where noMatch = parseError'
 
+many, many1 :: Parser a -> Parser [a]
+many  p = many1 p <|> return []
+many1 p = do
+  first <- p
+  rest  <- many p
+  return (first:rest)
+
+  
 parseError' :: Parser a 
 parseError' =
     Parser $ \input -> (input, Left $ TokenParser.ParseError {lineNo = 0, message = "No match", tokens = input})

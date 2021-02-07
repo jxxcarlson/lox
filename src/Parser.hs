@@ -2,7 +2,8 @@ module Parser where
 
 import Scanner (TokenType(..), TokenValue(..), Token(..), prettyPrint)
 import TokenParser
-    ( ParseError(..), Parser(Parser), satisfy, try, choice )
+    ( ParseError(..), Parser(Parser), satisfy, try, choice, many, many1 )
+import Control.Monad.Loops (concatM)
 
 {- GRAMMAR
 
@@ -54,9 +55,31 @@ binaryOpOfToken tok =
 -- TOP LEVEL PARSER
 
 expression :: Parser Expression
-expression = unary
+expression = factor
 
 -- BINARY
+
+
+
+-- factor :: Parser Expression
+-- factor = unary >>= concatM []
+-- -- factor = unary >>= concatM [factorWith, factorWith]
+-- factor = unary >>= factorWith
+
+
+
+
+-- (<||>) :: (a -> Parser a) -> (a -> Parser a) -> (a -> Parser a)
+-- p1 <||> p2 = Parser $ \s -> case runParser p1 s of
+--   (s', Left err)
+--     | s' == s   -> runParser p2 s
+--     | otherwise -> (s', Left err)
+--   success -> success
+
+
+
+factor = unary >>= factorWith
+
 
 factorWith :: Expression -> Parser Expression
 factorWith expr = do
