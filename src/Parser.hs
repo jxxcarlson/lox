@@ -55,14 +55,8 @@ binaryOpOfToken tok =
 
 fooM :: Monad m => m a -> [a -> m a] -> m a
 fooM ma [] = ma
--- fooM ma (f:fs) = fooM ma fs >>= f 
--- fooM ma (f:fs) = fooM (ma >>= f) fs
 fooM ma fs = foldl (>>=) ma fs
 
--- barM :: Monad m => [a -> m a] -> (a -> m a)
--- barM [f] = f
--- barM (f:fs) = (\x -> x >>= f >>= barM fs)
- 
 
 -- TOP LEVEL PARSER
 
@@ -79,9 +73,23 @@ applyMany' a fp =
         (s'', Right a'') -> runParser (applyMany' a'' fp) s''
 
 expression :: Parser Expression
-expression = term
+expression = comparison
 
--- BINARY
+
+-- COMPARISON
+
+comparison :: Parser Expression 
+comparison = applyMany term comparisonWith
+
+comparisonWith :: Expression -> Parser Expression
+comparisonWith expr = do
+    op <- comparisonOp
+    u <- term
+    return (Binary $ BinaryValue {leftExpr = expr, binop = binaryOpOfToken op, rightExpr = u})
+
+comparisonOp = TokenParser.choice "expecting comparsionOperator" [lessThan, lessThanOrEqual, greaterThan, greaterThanOrEqual]
+
+-- TERM
 
 term :: Parser Expression
 term = applyMany factor termWith
@@ -130,6 +138,19 @@ unaryMapper :: Token -> Expression -> Expression
 unaryMapper tok expr = case typ tok of 
   UMINUS -> Unary UnaryValue { op = UMinus, uexpr = expr}
   BANG  -> Unary UnaryValue { op = UBang, uexpr = expr}
+
+greaterThan :: Parser Token
+greaterThan = satisfy "greater than, expecting >" (\t -> typ t == GREATER)
+
+greaterThanOrEqual :: Parser Token
+greaterThanOrEqual = satisfy "greater than or equal, expecting >=" (\t -> typ t == GREATER_EQUAL)
+
+
+lessThan :: Parser Token
+lessThan = satisfy "less than, expecting <" (\t -> typ t == LESS)
+
+lessThanOrEqual :: Parser Token
+lessThanOrEqual = satisfy "less than or equal, expecting <=" (\t -> typ t == LESS_EQUAL)
 
 uminusOp :: Parser Token
 uminusOp = choice "uminusOp" [uminus, bang]
