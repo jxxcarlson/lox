@@ -2,7 +2,7 @@ module Parser where
 
 import Scanner (TokenType(..), TokenValue(..), Token(..), prettyPrint)
 import TokenParser
-    ( ParseError(..), Parser(Parser), satisfy, try, choice, many, many1 )
+    ( ParseError(..), Parser(Parser), runParser, satisfy, try, choice, many, many1 , (<|>))
 import Control.Monad.Loops (concatM)
 
 {- GRAMMAR
@@ -52,34 +52,59 @@ binaryOpOfToken tok =
        LESS_EQUAL -> BLessEqual
 
 
+
+fooM :: Monad m => m a -> [a -> m a] -> m a
+fooM ma [] = ma
+-- fooM ma (f:fs) = fooM ma fs >>= f 
+-- fooM ma (f:fs) = fooM (ma >>= f) fs
+fooM ma fs = foldl (>>=) ma fs
+
+-- barM :: Monad m => [a -> m a] -> (a -> m a)
+-- barM [f] = f
+-- barM (f:fs) = (\x -> x >>= f >>= barM fs)
+ 
+
 -- TOP LEVEL PARSER
 
+applyMany :: Parser a -> (a -> Parser a) -> Parser a
+applyMany p fp =
+  Parser $ \s -> case runParser p s of 
+    (s', Left err) -> (s, Left err)
+    (s'', Right a) -> runParser (applyMany' a fp) s''
+
+applyMany' :: a -> (a -> Parser a) -> Parser a
+applyMany' a fp = 
+  Parser $ \s -> case runParser (fp a) s of
+        (s', Left err) -> (s, Right a)
+        (s'', Right a'') -> runParser (applyMany' a'' fp) s''
+
 expression :: Parser Expression
-expression = factor
+expression = term
 
 -- BINARY
 
+term :: Parser Expression
+term = applyMany factor termWith
+
+
+termWith :: Expression -> Parser Expression
+termWith expr = do
+    op <- termOp
+    u <- factor
+    return (Binary $ BinaryValue {leftExpr = expr, binop = binaryOpOfToken op, rightExpr = u})
+
+termOp :: Parser Token
+termOp = TokenParser.choice "expecting  termOp" [ plus, minus]
 
 
 factor :: Parser Expression
-factor = unary >>= concatM [factorWith]
--- factor = unary >>= concatM [factorWith, factorWith]
--- factor = unary >>= factorWith
+-- factor = unary >>= concatM [factorWith]
+-- factor = unary >>= factorWith --  >>= factorWith
+-- factor = fooM unary [factorWith]
+-- factor = try (unary >>= factorWith) <|> try unary
+-- factor = oneOf [unary, unary >>= factorWith]
+factor = applyMany unary factorWith
 
-
-
-
--- (<||>) :: (a -> Parser a) -> (a -> Parser a) -> (a -> Parser a)
--- p1 <||> p2 = Parser $ \s -> case runParser p1 s of
---   (s', Left err)
---     | s' == s   -> runParser p2 s
---     | otherwise -> (s', Left err)
---   success -> success
-
-
-
--- factor :: Parser Expression
--- factor = unary >>= factorWith
 
 factorWith :: Expression -> Parser Expression
 factorWith expr = do
@@ -115,11 +140,18 @@ uminus = satisfy "uminus, expecting -" (\t -> typ t == UMINUS)
 bang :: Parser Token
 bang = satisfy "bang, expecting !" (\t -> typ t == BANG)
 
+plus :: Parser Token
+plus = satisfy "plus, expecting +" (\t -> typ t == PLUS)
+
+minus :: Parser Token
+minus = satisfy "minus, expecting -" (\t -> typ t == MINUS)
+
+
 times :: Parser Token
-times = satisfy "times, expecting +" (\t -> typ t == STAR)
+times = satisfy "times, expecting *" (\t -> typ t == STAR)
 
 slash :: Parser Token
-slash = satisfy "times, expecting /" (\t -> typ t == SLASH)
+slash = satisfy "slash, expecting /" (\t -> typ t == SLASH)
 
 -- PRIMARY
 

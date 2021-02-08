@@ -45,7 +45,7 @@ try p = Parser $ \state -> case runParser p state of
 (<|>) :: Parser a -> Parser a -> Parser a
 p1 <|> p2 = Parser $ \s -> case runParser p1 s of
   (s', Left err)
-    | s' == s   -> runParser p2 s
+    | s' == s -> runParser p2 s
     | otherwise -> (s', Left err)
   success -> success
 
