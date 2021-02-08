@@ -118,6 +118,9 @@ processInputLines lines_ = map processInputLine lines_
 processInputLine :: (Int, String) -> IO()
 processInputLine (k, input) = putStrLn $ runLine' k input
 
+isSpace :: Char -> Bool
+isSpace c = c == ' '
+
 trimLeadingSpaces :: String -> String
 trimLeadingSpaces = dropWhile isSpace
 
