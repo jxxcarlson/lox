@@ -1,10 +1,12 @@
 module Scanner (TokenType(..), TokenValue(..), Token(..), prettyPrint, Scanner.line) where 
 
-import ParserTools
+import MiniParsec
 import Data.List
 
+type Parser = MPParser Char
+
 line :: Int -> String -> (String, Either ParseError [Token])
-line lineNumber input =  ParserTools.runParser (lineParser lineNumber) input
+line lineNumber input =  runParser (lineParser lineNumber) input
 
 prettyPrintToken :: Token -> String
 prettyPrintToken tok = show (typ tok) ++ ": " ++ lexeme tok
