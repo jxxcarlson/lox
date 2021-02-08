@@ -46,6 +46,7 @@ binaryOpOfToken tok =
        STAR -> BTimes
        SLASH -> BDiv
        EQUAL_EQUAL -> BEqual
+       BANG_EQUAL -> BNotEqual
        GREATER -> BGreater
        GREATER_EQUAL -> BGreaterEqual
        LESS -> BLess
@@ -73,8 +74,21 @@ applyMany' a fp =
         (s'', Right a'') -> runParser (applyMany' a'' fp) s''
 
 expression :: Parser Expression
-expression = comparison
+expression = equality
 
+
+-- EQUALITY
+
+equality :: Parser Expression
+equality = applyMany comparison equalityWith
+
+equalityOp = TokenParser.choice "expecting equalityOperator" [equal, notEqual]
+
+equalityWith :: Expression -> Parser Expression
+equalityWith expr = do
+    op <- equalityOp
+    u <- comparison
+    return (Binary $ BinaryValue {leftExpr = expr, binop = binaryOpOfToken op, rightExpr = u})
 
 -- COMPARISON
 
@@ -106,11 +120,6 @@ termOp = TokenParser.choice "expecting  termOp" [ plus, minus]
 
 
 factor :: Parser Expression
--- factor = unary >>= concatM [factorWith]
--- factor = unary >>= factorWith --  >>= factorWith
--- factor = fooM unary [factorWith]
--- factor = try (unary >>= factorWith) <|> try unary
--- factor = oneOf [unary, unary >>= factorWith]
 factor = applyMany unary factorWith
 
 
@@ -139,12 +148,18 @@ unaryMapper tok expr = case typ tok of
   UMINUS -> Unary UnaryValue { op = UMinus, uexpr = expr}
   BANG  -> Unary UnaryValue { op = UBang, uexpr = expr}
 
+equal :: Parser Token
+equal = satisfy "equal, expecting ==" (\t -> typ t == EQUAL_EQUAL)
+
+notEqual :: Parser Token
+notEqual = satisfy "not equal, expecting !=" (\t -> typ t == BANG_EQUAL)
+
+
 greaterThan :: Parser Token
 greaterThan = satisfy "greater than, expecting >" (\t -> typ t == GREATER)
 
 greaterThanOrEqual :: Parser Token
 greaterThanOrEqual = satisfy "greater than or equal, expecting >=" (\t -> typ t == GREATER_EQUAL)
-
 
 lessThan :: Parser Token
 lessThan = satisfy "less than, expecting <" (\t -> typ t == LESS)
