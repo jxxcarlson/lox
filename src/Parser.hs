@@ -54,33 +54,30 @@ binaryOpOfToken tok =
 
 
 
-fooM :: Monad m => m a -> [a -> m a] -> m a
-fooM ma [] = ma
-fooM ma fs = foldl (>>=) ma fs
-
-
 -- TOP LEVEL PARSER
 
-applyMany :: Parser a -> (a -> Parser a) -> Parser a
-applyMany p fp =
-  Parser $ \s -> case runParser p s of 
-    (s', Left err) -> (s, Left err)
-    (s'', Right a) -> runParser (applyMany' a fp) s''
-
-applyMany' :: a -> (a -> Parser a) -> Parser a
-applyMany' a fp = 
-  Parser $ \s -> case runParser (fp a) s of
-        (s', Left err) -> (s, Right a)
-        (s'', Right a'') -> runParser (applyMany' a'' fp) s''
 
 expression :: Parser Expression
 expression = equality
 
 
+manyP :: Parser a -> (a -> Parser a) -> Parser a
+manyP p fp =
+  Parser $ \s -> case runParser p s of 
+    (s', Left err) -> (s, Left err)
+    (s'', Right a) -> runParser (manyP' a fp) s''
+
+manyP' :: a -> (a -> Parser a) -> Parser a
+manyP' a fp = 
+  Parser $ \s -> case runParser (fp a) s of
+        (s', Left err) -> (s, Right a)
+        (s'', Right a'') -> runParser (manyP' a'' fp) s''
+
+
 -- EQUALITY
 
 equality :: Parser Expression
-equality = applyMany comparison equalityWith
+equality = manyP comparison equalityWith
 
 equalityOp = TokenParser.choice "expecting equalityOperator" [equal, notEqual]
 
@@ -93,7 +90,7 @@ equalityWith expr = do
 -- COMPARISON
 
 comparison :: Parser Expression 
-comparison = applyMany term comparisonWith
+comparison = manyP term comparisonWith
 
 comparisonWith :: Expression -> Parser Expression
 comparisonWith expr = do
@@ -106,7 +103,7 @@ comparisonOp = TokenParser.choice "expecting comparsionOperator" [lessThan, less
 -- TERM
 
 term :: Parser Expression
-term = applyMany factor termWith
+term = manyP factor termWith
 
 
 termWith :: Expression -> Parser Expression
@@ -120,7 +117,7 @@ termOp = TokenParser.choice "expecting  termOp" [ plus, minus]
 
 
 factor :: Parser Expression
-factor = applyMany unary factorWith
+factor = manyP unary factorWith
 
 
 factorWith :: Expression -> Parser Expression
@@ -293,4 +290,12 @@ makeNumber x = Primitive (Number x)
 
 makeString :: String -> Expression
 makeString str = Primitive (STR str)
+
+
+
+fooM :: Monad m => m a -> [a -> m a] -> m a
+fooM ma [] = ma
+fooM ma fs = foldl (>>=) ma fs
+
+
 
