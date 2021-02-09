@@ -12,11 +12,11 @@ import Data.List
 
 import Data.List.NonEmpty (fromList)
 
-import ParserTools
 import qualified TokenParser
 import Scanner
 import qualified Parser as EP -- Expressions Parser
 import Eval(eval)
+import qualified MiniParsec
 
 -- DISPATCHER
 
@@ -63,7 +63,7 @@ runLine' k input_ =
     in
     case Scanner.line k $ trimLeadingSpaces input of
         (_, Right tokens) -> -- prefixLine k (cyan input) ++ Scanner.prettyPrint tokens
-           case TokenParser.runParser EP.expression tokens of
+           case MiniParsec.runParser EP.expression tokens of
                (_, Right e) -> prettyPrintExpression k input tokens e ++ magenta(" => ") ++ green (show (eval e)) 
                (ts', Left error') -> prettyprintError k input tokens error'
         (remainder, Left error) -> prefixLine k (cyan input) ++ red (show error)
@@ -117,6 +117,9 @@ processInputLines lines_ = map processInputLine lines_
 
 processInputLine :: (Int, String) -> IO()
 processInputLine (k, input) = putStrLn $ runLine' k input
+
+isSpace :: Char -> Bool
+isSpace c = c == ' '
 
 trimLeadingSpaces :: String -> String
 trimLeadingSpaces = dropWhile isSpace

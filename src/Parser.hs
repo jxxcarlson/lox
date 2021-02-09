@@ -1,9 +1,20 @@
 module Parser where
 
 import Scanner (TokenType(..), TokenValue(..), Token(..), prettyPrint)
-import TokenParser
-    ( ParseError(..), Parser(Parser), runParser, satisfy, try, choice, many, many1 , (<|>))
+
+
+-- import TokenParser
+--     ( TParseError(..), TokenParser(TokenParser), runParser, satisfy, try, choice, many, many1 , (<|>))
+
 import Control.Monad.Loops (concatM)
+
+import MiniParsec
+
+type TokenParser = MPParser Token ParseError
+
+
+
+-- data TParseError = TParseError { lineNo :: Int, message :: String, tokens :: [Token] } deriving Show
 
 {- GRAMMAR
 
@@ -57,31 +68,18 @@ binaryOpOfToken tok =
 -- TOP LEVEL PARSER
 
 
-expression :: Parser Expression
+expression :: TokenParser Expression
 expression = equality
-
-
-manyP :: Parser a -> (a -> Parser a) -> Parser a
-manyP p fp =
-  Parser $ \s -> case runParser p s of 
-    (s', Left err) -> (s, Left err)
-    (s'', Right a) -> runParser (manyP' a fp) s''
-
-manyP' :: a -> (a -> Parser a) -> Parser a
-manyP' a fp = 
-  Parser $ \s -> case runParser (fp a) s of
-        (s', Left err) -> (s, Right a)
-        (s'', Right a'') -> runParser (manyP' a'' fp) s''
-
 
 -- EQUALITY
 
-equality :: Parser Expression
+equality :: TokenParser Expression
 equality = manyP comparison equalityWith
 
-equalityOp = TokenParser.choice "expecting equalityOperator" [equal, notEqual]
+equalityOp :: MPParser Token ParseError Token
+equalityOp = MiniParsec.choice "expecting equalityOperator" [equal, notEqual]
 
-equalityWith :: Expression -> Parser Expression
+equalityWith :: Expression -> TokenParser Expression
 equalityWith expr = do
     op <- equalityOp
     u <- comparison
@@ -89,55 +87,56 @@ equalityWith expr = do
 
 -- COMPARISON
 
-comparison :: Parser Expression 
+comparison :: TokenParser Expression 
 comparison = manyP term comparisonWith
 
-comparisonWith :: Expression -> Parser Expression
+comparisonWith :: Expression -> TokenParser Expression
 comparisonWith expr = do
     op <- comparisonOp
     u <- term
     return (Binary $ BinaryValue {leftExpr = expr, binop = binaryOpOfToken op, rightExpr = u})
 
-comparisonOp = TokenParser.choice "expecting comparsionOperator" [lessThan, lessThanOrEqual, greaterThan, greaterThanOrEqual]
+comparisonOp = MiniParsec.choice "expecting comparsionOperator" [lessThan, lessThanOrEqual, greaterThan, greaterThanOrEqual]
 
 -- TERM
 
-term :: Parser Expression
+term :: TokenParser Expression
 term = manyP factor termWith
 
 
-termWith :: Expression -> Parser Expression
+termWith :: Expression -> TokenParser Expression
 termWith expr = do
     op <- termOp
     u <- factor
     return (Binary $ BinaryValue {leftExpr = expr, binop = binaryOpOfToken op, rightExpr = u})
 
-termOp :: Parser Token
-termOp = TokenParser.choice "expecting  termOp" [ plus, minus]
+termOp :: TokenParser Token
+termOp = MiniParsec.choice "expecting  termOp" [ plus, minus]
 
 
-factor :: Parser Expression
+factor :: TokenParser Expression
 factor = manyP unary factorWith
 
 
-factorWith :: Expression -> Parser Expression
+factorWith :: Expression -> TokenParser Expression
 factorWith expr = do
     op <- factorOp
     u <- unary
     return (Binary $ BinaryValue {leftExpr = expr, binop = binaryOpOfToken op, rightExpr = u})
 
-factorOp :: Parser Token
-factorOp = TokenParser.choice "expecting factorOp" [ times, slash]
+-- TO DO
+factorOp :: TokenParser Token
+factorOp = MiniParsec.choice "expecting factorOp" [ times, slash]
 
 -- UNARY
 
-unary :: Parser Expression
-unary = choice "unary" [unaryOp >>= unary_, primary]
+unary :: TokenParser Expression
+unary = choice "unary" [unaryOp MiniParsec.>>= unary_, primary]
 
-unaryOp :: Parser Token
+unaryOp :: TokenParser Token
 unaryOp = choice "unaryOp" [uminus, bang]
 
-unary_ :: Token -> Parser Expression
+unary_ :: Token -> TokenParser Expression
 unary_ token = unaryMapper token <$> unary
 
 unaryMapper :: Token -> Expression -> Expression
@@ -145,59 +144,60 @@ unaryMapper tok expr = case typ tok of
   UMINUS -> Unary UnaryValue { op = UMinus, uexpr = expr}
   BANG  -> Unary UnaryValue { op = UBang, uexpr = expr}
 
-equal :: Parser Token
+equal :: TokenParser Token
 equal = satisfy "equal, expecting ==" (\t -> typ t == EQUAL_EQUAL)
 
-notEqual :: Parser Token
+notEqual :: TokenParser Token
 notEqual = satisfy "not equal, expecting !=" (\t -> typ t == BANG_EQUAL)
 
 
-greaterThan :: Parser Token
+greaterThan :: TokenParser Token
 greaterThan = satisfy "greater than, expecting >" (\t -> typ t == GREATER)
 
-greaterThanOrEqual :: Parser Token
+greaterThanOrEqual :: TokenParser Token
 greaterThanOrEqual = satisfy "greater than or equal, expecting >=" (\t -> typ t == GREATER_EQUAL)
 
-lessThan :: Parser Token
+lessThan :: TokenParser Token
 lessThan = satisfy "less than, expecting <" (\t -> typ t == LESS)
 
-lessThanOrEqual :: Parser Token
+lessThanOrEqual :: TokenParser Token
 lessThanOrEqual = satisfy "less than or equal, expecting <=" (\t -> typ t == LESS_EQUAL)
 
-uminusOp :: Parser Token
+uminusOp :: TokenParser Token
 uminusOp = choice "uminusOp" [uminus, bang]
 
-uminus :: Parser Token
+uminus :: TokenParser Token
 uminus = satisfy "uminus, expecting -" (\t -> typ t == UMINUS)
 
-bang :: Parser Token
+bang :: TokenParser Token
 bang = satisfy "bang, expecting !" (\t -> typ t == BANG)
 
-plus :: Parser Token
+plus :: TokenParser Token
 plus = satisfy "plus, expecting +" (\t -> typ t == PLUS)
 
-minus :: Parser Token
+minus :: TokenParser Token
 minus = satisfy "minus, expecting -" (\t -> typ t == MINUS)
 
 
-times :: Parser Token
+times :: TokenParser Token
 times = satisfy "times, expecting *" (\t -> typ t == STAR)
 
-slash :: Parser Token
-slash = satisfy "slash, expecting /" (\t -> typ t == SLASH)
+slash :: TokenParser Token
+slash = MiniParsec.satisfy "slash, expecting /" (\t -> typ t == SLASH)
 
 -- PRIMARY
 
-primary :: Parser Expression
-primary = TokenParser.choice "group or primary" [try group, primitive]
+primary :: TokenParser Expression
+primary = MiniParsec.choice "group or primary" [try group, primitive]
 
-group :: Parser Expression 
+group :: TokenParser Expression 
 group = fmap Group ( skip LEFT_PAREN >> expression <* (skip RIGHT_PAREN) )   
 
-primitive :: Parser Expression
-primitive = Parser $ \input -> 
+
+primitive :: TokenParser Expression
+primitive =  MPParser $ \input -> 
   case input of 
-    [] -> ([], Left $ ParseError {lineNo = -1, message = "empty input", tokens = []})
+    [] -> ([], Left $ ParseError "primitive" "empty input")
     (t:ts) ->
       if typ t == NUMBER then
         (ts, Right (toPrimitive $ tokenValue t))
@@ -210,19 +210,19 @@ primitive = Parser $ \input ->
       else if typ t == NIL then
         (ts, Right (toPrimitive $ tokenValue t))
       else
-       (ts, Left $ ParseError {lineNo = Scanner.lineNumber t, message = "Expecting primitive", tokens = input})
+       (ts, Left $ ParseError "primitive" "expecting primitive")
 
 -- HELPERS
 
-skip :: TokenType -> Parser Expression
-skip tt = Parser $ \input ->
+skip :: TokenType -> TokenParser Expression
+skip tt = MPParser $ \input ->
     let 
         (t:ts) = input
     in
         if typ t == tt then
             (ts, Right (Primitive UNIT))
         else
-            (ts, Left ParseError {lineNo = Scanner.lineNumber t, message = "Expecting " ++ show tt ++ ", actual = " ++ show (typ t), tokens = input})
+            (ts, Left (ParseError "skip"  ("expecting: " ++ show tt)))
 
 toPrimitive :: TokenValue -> Expression
 toPrimitive tv = 
@@ -235,16 +235,12 @@ toPrimitive tv =
 
 
 
-
-dummyError :: ParseError
-dummyError = ParseError { lineNo = 0, message = "Nothing here yet", tokens = []}
-
 -- PRETTY PRINTER
 
 {-
 
 > e1 = Binary (BinaryValue {leftExpr = makeNumber 2, binop = BPlus, rightExpr = makeNumber 3})
-> putStrLn $ Parser.prettyPrint (Group e1)
+> putStrLn $ TokenParser.prettyPrint (Group e1)
 (2.0 + 3.0)
 
 -}
@@ -267,7 +263,6 @@ prettyPrintUnaryOp :: UnaryOp -> String
 prettyPrintUnaryOp o = 
   case o of 
     UMinus -> "-"
-    UBang -> "!"
 
 prettyPrintBinop :: BinaryOp -> String 
 prettyPrintBinop binop = 
@@ -293,9 +288,9 @@ makeString str = Primitive (STR str)
 
 
 
-fooM :: Monad m => m a -> [a -> m a] -> m a
-fooM ma [] = ma
-fooM ma fs = foldl (>>=) ma fs
+-- fooM :: Monad m => m a -> [a -> m a] -> m a
+-- fooM ma [] = ma
+-- fooM ma fs = foldl (TokenParser.>>=) ma fs
 
 
 
