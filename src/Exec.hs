@@ -11,8 +11,6 @@ import qualified System.Directory.Internal as SysD
 import Data.List
 
 import Data.List.NonEmpty (fromList)
-
-import qualified TokenParser
 import Scanner
 import qualified Parser as EP -- Expressions Parser
 import Eval(eval)
