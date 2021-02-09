@@ -4,7 +4,7 @@ import MiniParsec
 import Data.List
 import ParserHelpers
 
-type SCParser = MPParser Char
+type SCParser = MPParser Char ParseError
 
 line :: Int -> String -> (String, Either ParseError [Token])
 line lineNumber input =  runParser (lineParser lineNumber) input

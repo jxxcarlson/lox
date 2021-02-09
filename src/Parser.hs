@@ -8,12 +8,13 @@ import Scanner (TokenType(..), TokenValue(..), Token(..), prettyPrint)
 
 import Control.Monad.Loops (concatM)
 
-import MiniParsec as TokenParser
+import MiniParsec
 
-type TokenParser = MPParser Token
+type TokenParser = MPParser Token ParseError
 
-data TParseError = TParseError { lineNo :: Int, message :: String, tokens :: [Token] } deriving Show
 
+
+-- data TParseError = TParseError { lineNo :: Int, message :: String, tokens :: [Token] } deriving Show
 
 {- GRAMMAR
 
@@ -70,26 +71,13 @@ binaryOpOfToken tok =
 expression :: TokenParser Expression
 expression = equality
 
-
-manyP :: TokenParser a -> (a -> TokenParser a) -> TokenParser a
-manyP p fp =
-  TokenParser $ \s -> case runParser p s of 
-    (s', Left err) -> (s, Left err)
-    (s'', Right a) -> runParser (manyP' a fp) s''
-
-manyP' :: a -> (a -> TokenParser a) -> TokenParser a
-manyP' a fp = 
-  TokenParser $ \s -> case runParser (fp a) s of
-        (s', Left err) -> (s, Right a)
-        (s'', Right a'') -> runParser (manyP' a'' fp) s''
-
-
 -- EQUALITY
 
 equality :: TokenParser Expression
 equality = manyP comparison equalityWith
 
-equalityOp = TokenParser.choice "expecting equalityOperator" [equal, notEqual]
+equalityOp :: MPParser Token ParseError Token
+equalityOp = MiniParsec.choice "expecting equalityOperator" [equal, notEqual]
 
 equalityWith :: Expression -> TokenParser Expression
 equalityWith expr = do
@@ -108,7 +96,7 @@ comparisonWith expr = do
     u <- term
     return (Binary $ BinaryValue {leftExpr = expr, binop = binaryOpOfToken op, rightExpr = u})
 
-comparisonOp = TokenParser.choice "expecting comparsionOperator" [lessThan, lessThanOrEqual, greaterThan, greaterThanOrEqual]
+comparisonOp = MiniParsec.choice "expecting comparsionOperator" [lessThan, lessThanOrEqual, greaterThan, greaterThanOrEqual]
 
 -- TERM
 
@@ -123,7 +111,7 @@ termWith expr = do
     return (Binary $ BinaryValue {leftExpr = expr, binop = binaryOpOfToken op, rightExpr = u})
 
 termOp :: TokenParser Token
-termOp = TokenParser.choice "expecting  termOp" [ plus, minus]
+termOp = MiniParsec.choice "expecting  termOp" [ plus, minus]
 
 
 factor :: TokenParser Expression
@@ -136,13 +124,14 @@ factorWith expr = do
     u <- unary
     return (Binary $ BinaryValue {leftExpr = expr, binop = binaryOpOfToken op, rightExpr = u})
 
+-- TO DO
 factorOp :: TokenParser Token
-factorOp = TokenParser.choice "expecting factorOp" [ times, slash]
+factorOp = MiniParsec.choice "expecting factorOp" [ times, slash]
 
 -- UNARY
 
 unary :: TokenParser Expression
-unary = choice "unary" [unaryOp >>= unary_, primary]
+unary = choice "unary" [unaryOp MiniParsec.>>= unary_, primary]
 
 unaryOp :: TokenParser Token
 unaryOp = choice "unaryOp" [uminus, bang]
@@ -194,20 +183,21 @@ times :: TokenParser Token
 times = satisfy "times, expecting *" (\t -> typ t == STAR)
 
 slash :: TokenParser Token
-slash = satisfy "slash, expecting /" (\t -> typ t == SLASH)
+slash = MiniParsec.satisfy "slash, expecting /" (\t -> typ t == SLASH)
 
 -- PRIMARY
 
 primary :: TokenParser Expression
-primary = TokenParser.choice "group or primary" [try group, primitive]
+primary = MiniParsec.choice "group or primary" [try group, primitive]
 
 group :: TokenParser Expression 
 group = fmap Group ( skip LEFT_PAREN >> expression <* (skip RIGHT_PAREN) )   
 
+
 primitive :: TokenParser Expression
-primitive = TokenParser $ \input -> 
+primitive =  MPParser $ \input -> 
   case input of 
-    [] -> ([], Left $ TParseError {lineNo = -1, message = "empty input", tokens = []})
+    [] -> ([], Left $ ParseError "primitive" "empty input")
     (t:ts) ->
       if typ t == NUMBER then
         (ts, Right (toPrimitive $ tokenValue t))
@@ -220,19 +210,19 @@ primitive = TokenParser $ \input ->
       else if typ t == NIL then
         (ts, Right (toPrimitive $ tokenValue t))
       else
-       (ts, Left $ TParseError {lineNo = Scanner.lineNumber t, message = "Expecting primitive", tokens = input})
+       (ts, Left $ ParseError "primitive" "expecting primitive")
 
 -- HELPERS
 
 skip :: TokenType -> TokenParser Expression
-skip tt = TokenParser $ \input ->
+skip tt = MPParser $ \input ->
     let 
         (t:ts) = input
     in
         if typ t == tt then
             (ts, Right (Primitive UNIT))
         else
-            (ts, Left TParseError {lineNo = Scanner.lineNumber t, message = "Expecting " ++ show tt ++ ", actual = " ++ show (typ t), tokens = input})
+            (ts, Left (ParseError "skip"  ("expecting: " ++ show tt)))
 
 toPrimitive :: TokenValue -> Expression
 toPrimitive tv = 
@@ -244,10 +234,6 @@ toPrimitive tv =
         TNIL -> Primitive NIL_
 
 
-
-
-dummyError :: TParseError
-dummyError = TParseError { lineNo = 0, message = "Nothing here yet", tokens = []}
 
 -- PRETTY PRINTER
 
@@ -267,9 +253,9 @@ prettyPrint expr =
                 STR s -> s
                 BoolVal b -> show b
                 NIL_ -> "nil"
-        Unary uVal -> prettyPrintUnaryOp (op uVal) ++ TokenParser.prettyPrint (uexpr uVal)
-        Binary bVal -> TokenParser.prettyPrint (leftExpr bVal) ++ " " ++ prettyPrintBinop (binop bVal) ++ " " ++ TokenParser.prettyPrint (rightExpr bVal)
-        Group e -> "(" ++ TokenParser.prettyPrint e ++ ")"
+        Unary uVal -> prettyPrintUnaryOp (op uVal) ++ Parser.prettyPrint (uexpr uVal)
+        Binary bVal -> Parser.prettyPrint (leftExpr bVal) ++ " " ++ prettyPrintBinop (binop bVal) ++ " " ++ Parser.prettyPrint (rightExpr bVal)
+        Group e -> "(" ++ Parser.prettyPrint e ++ ")"
 
            
 
@@ -277,7 +263,6 @@ prettyPrintUnaryOp :: UnaryOp -> String
 prettyPrintUnaryOp o = 
   case o of 
     UMinus -> "-"
-    UBang -> "!"
 
 prettyPrintBinop :: BinaryOp -> String 
 prettyPrintBinop binop = 
@@ -303,9 +288,9 @@ makeString str = Primitive (STR str)
 
 
 
-fooM :: Monad m => m a -> [a -> m a] -> m a
-fooM ma [] = ma
-fooM ma fs = foldl (>>=) ma fs
+-- fooM :: Monad m => m a -> [a -> m a] -> m a
+-- fooM ma [] = ma
+-- fooM ma fs = foldl (TokenParser.>>=) ma fs
 
 
 

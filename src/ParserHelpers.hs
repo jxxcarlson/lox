@@ -2,7 +2,7 @@ module ParserHelpers where
 
 import MiniParsec 
 
-type Parser = MPParser Char
+type Parser = MPParser Char ParseError
 
 isAlpha' :: Char -> Bool
 isAlpha' c = c `elem` "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMOPQRSTUVWXYZ_"
