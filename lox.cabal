@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 611d7ef8a07f1a0bee18a8c5c74aae6f26e193dc50e56b726808d993bc0fcfb4
+-- hash: 7bda9c4106fedcb15dce017f474900b4b4f85dff0764534e808bc91e1fdf8b91
 
 name:           lox
 version:        0.1.0.0
@@ -30,10 +30,8 @@ library
       Eval
       Exec
       Lib
-      MiniParsec
       NewParser
       Parser
-      ParserHelpers
       ParserTools
       Scanner
       TokenParser
