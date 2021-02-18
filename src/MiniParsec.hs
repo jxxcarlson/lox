@@ -1,33 +1,35 @@
 {-# OPTIONS_GHC -Wno-deferred-type-errors #-}
 module MiniParsec where
 
--- https://hasura.io/blog/parser-combinators-walkthrough/
+{-
+
+MiniParsec is a built-from=scratch, simplified version of the
+Parsec combinator library which is basd on the blog post
+https://hasura.io/blog/parser-combinators-walkthrough/
+
+-}
 
 
+-- TYPES
+
+{-
+
+Parameters:
+
+   s -- for stream (of Char, Token, etc.)
+   e -- the error type
+   a -- what running the parser yields
+
+-}
 newtype MPParser s e a = MPParser {
   runParser :: [s] -> ([s], Either e a)
 }
 
-leftMap :: (a -> a') -> Either a b -> Either a' b
-leftMap f e = 
-  case e of 
-    Left x -> Left (f x)
-    Right y -> Right y
-
-
-applyFirst :: (a -> b)->  (a,x) -> (b,x)
-applyFirst f (a,x) = (f a, x)
-
-applySecond :: (x -> y)->  (a,x) -> (a,y)
-applySecond f (a,x) = (a, f x)
-
-errorMap :: (e -> e') -> MPParser s e a -> MPParser s e' a
-errorMap f p =
-  MPParser $ \ss -> applySecond (leftMap f) ((runParser p) ss)
-
-
 data ParseError = ParseError String String
   deriving Show
+
+
+-- BASIC PARSERS
 
 any :: MPParser s ParseError s
 any = MPParser $ \input -> case input of
@@ -35,6 +37,21 @@ any = MPParser $ \input -> case input of
   []     -> ([], Left $ (ParseError "any" "input consumed"))
 
 
+{-
+
+  > runParser (satisfy "starts with x" (\c -> c == 'x')) "xyz"
+  ("yz",Right 'x')
+
+  > runParser (satisfy "starts with x" (\c -> c == 'x')) "axyz"
+  ("axyz", Left (ParseError "starts with x" "'a'"))
+
+-}
+satisfy :: String -> (a -> Bool) -> MPParser a ParseError a
+satisfy description predicate = try $ do
+  c <- MiniParsec.any
+  if predicate c
+    then return c
+    else parseError description "satisfy"
 
 eof :: MPParser x ParseError ()
 eof = MPParser $ \input -> case input of
@@ -42,6 +59,21 @@ eof = MPParser $ \input -> case input of
   []    -> ([], Right ())
   -- leftover data: the parser fails
   (c:_) -> (input, Left $ ParseError "eof" "left over input!")
+
+
+parseError :: String -> String -> MPParser x ParseError a 
+parseError source description =
+    MPParser $ \input -> (input, Left $ ParseError source description)
+    
+
+try :: MPParser x e a -> MPParser x e a
+try p = MPParser $ \state -> case runParser p state of
+  (_newState, Left err) -> (state, Left err)
+  success               -> success
+
+
+
+-- FUNCTOR, APPLICATIVE, AND MONAD
 
 andThen :: MPParser x e a -> (a -> MPParser x e b) -> MPParser x e b
 parserA `andThen` f = MPParser $ \input ->
@@ -91,31 +123,11 @@ instance Applicative (MPParser x e) where
     (<*>) pf p = ap pf p
 
 
-
 instance Monad (MPParser x e) where
     (>>=) = bind
 
--- > runParser (satisfy "starts with x" (\c -> c == 'x')) "xyz"
--- ("yz",Right 'x')
--- > runParser (satisfy "starts with x" (\c -> c == 'x')) "axyz"
--- ("axyz", Left (ParseError "starts with x" "'a'"))
 
-satisfy :: String -> (a -> Bool) -> MPParser a ParseError a
-satisfy description predicate = try $ do
-  c <- MiniParsec.any
-  if predicate c
-    then return c
-    else parseError description "satisfy"
-
-parseError :: String -> String -> MPParser x ParseError a 
-parseError source description =
-    MPParser $ \input -> (input, Left $ ParseError source description)
-
-try :: MPParser x e a -> MPParser x e a
-try p = MPParser $ \state -> case runParser p state of
-  (_newState, Left err) -> (state, Left err)
-  success               -> success
-
+-- COMBINATORS
 
 (<|>) :: Eq x => MPParser x e a -> MPParser x e a -> MPParser x e a
 p1 <|> p2 = MPParser $ \s -> case runParser p1 s of
@@ -131,6 +143,7 @@ choice description ps = foldr (<|>) noMatch ps
 parseError' :: MPParser x ParseError a 
 parseError' =
     MPParser $ \input -> (input, Left $ ParseError "No match" "choice")
+
 
 many, many1 :: Eq x => MPParser x e a -> MPParser x e [a]
 many  p = many1 p <|> return []
@@ -148,6 +161,28 @@ sepBy1 p s = do
   return (first:rest)
 
 
+{-
+
+Apply parser p, then apply parser function q as many times as possible.
+For both p and q, accumulate the results.  This combinator is useful
+when parsing expressions resulting from the production rule 
+
+     a --> b c*
+
+-}
+manyP :: MPParser x e a -> (a -> MPParser x e a) -> MPParser x e a
+manyP p q =
+  MPParser $ \s -> case runParser p s of 
+    (s', Left err) -> (s, Left err)
+    (s'', Right a) -> runParser (manyP' a q) s''
+
+manyP' :: a -> (a -> MPParser x e a) -> MPParser x e a
+manyP' a q = 
+  MPParser $ \s -> case runParser (q a) s of
+        (s', Left err) -> (s, Right a)
+        (s'', Right a'') -> runParser (manyP' a'' q) s''
+
+
 pSequence :: [MPParser x e [a]] -> MPParser x e [a]
 pSequence (p:[]) = p
 pSequence (p:ps) = do
@@ -155,16 +190,21 @@ pSequence (p:ps) = do
     rest <- pSequence ps
     return (first ++ rest)
 
---- MORE STUFF
 
-manyP :: MPParser x e a -> (a -> MPParser x e a) -> MPParser x e a
-manyP p fp =
-  MPParser $ \s -> case runParser p s of 
-    (s', Left err) -> (s, Left err)
-    (s'', Right a) -> runParser (manyP' a fp) s''
+-- HELPERS
 
-manyP' :: a -> (a -> MPParser x e a) -> MPParser x e a
-manyP' a fp = 
-  MPParser $ \s -> case runParser (fp a) s of
-        (s', Left err) -> (s, Right a)
-        (s'', Right a'') -> runParser (manyP' a'' fp) s''
+mapEither :: (a -> a') -> Either a b -> Either a' b
+mapEither f e =
+  case e of
+    Left x -> Left (f x)
+    Right y -> Right y
+
+mapFirst :: (a -> b)->  (a,x) -> (b,x)
+mapFirst f (a,x) = (f a, x)
+
+mapSecond :: (x -> y)->  (a,x) -> (a,y)
+mapSecond f (a,x) = (a, f x)
+
+mapError :: (e -> e') -> MPParser s e a -> MPParser s e' a
+mapError f p =
+  MPParser $ \ss -> mapSecond (mapEither f) ((runParser p) ss)
