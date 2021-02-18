@@ -1,4 +1,5 @@
 {-# OPTIONS_GHC -Wno-deferred-type-errors #-}
+
 module MiniParsec where
 
 {-
