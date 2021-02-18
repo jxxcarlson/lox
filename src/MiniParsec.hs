@@ -174,10 +174,12 @@ manyP' a q =
         (s', Left err) -> (s, Right a)
         (s'', Right a'') -> runParser (manyP' a'' q) s''
 
-
-pSequence :: [MPParser x e [a]] -> MPParser x e [a]
-pSequence (p:[]) = p
-pSequence (p:ps) = do
+{-
+Like sequence, but for MPParser
+-}
+mpSequence :: [MPParser x e [a]] -> MPParser x e [a]
+mpSequence (p:[]) = p
+mpSequence (p:ps) = do
     first <- p
     rest <- pSequence ps
     return (first ++ rest)
