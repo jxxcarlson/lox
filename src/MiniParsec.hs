@@ -7,7 +7,6 @@ Parsec combinator library which is basd on the blog post
 https://hasura.io/blog/parser-combinators-walkthrough/
 -}
 
-
 -- TYPES
 
 {-
