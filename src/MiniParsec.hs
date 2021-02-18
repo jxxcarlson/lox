@@ -181,7 +181,7 @@ mpSequence :: [MPParser x e [a]] -> MPParser x e [a]
 mpSequence (p:[]) = p
 mpSequence (p:ps) = do
     first <- p
-    rest <- pSequence ps
+    rest <- mpSequence ps
     return (first ++ rest)
 
 

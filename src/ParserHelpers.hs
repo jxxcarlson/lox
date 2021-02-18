@@ -36,16 +36,16 @@ foo = satisfy "foo" (\c -> c /= ' ')
 
 literalString = quotationMark >> restOfString <*quotationMark
 
-integerDigits = (pSequence [nonzeroDigit, digits]) <* spaces
+integerDigits = (mpSequence [nonzeroDigit, digits]) <* spaces
 
-floatDigits_ = (pSequence [integerDigits, decimalPoint, digits]) <* spaces
+floatDigits_ = (mpSequence [integerDigits, decimalPoint, digits]) <* spaces
 
 doubleDigits = choice "double" [try floatDigits_, integerDigits]
 
 double :: Parser Double
 double = (\x -> read x) <$> doubleDigits
 
-identifier = (pSequence [alpha', alphaNums']) <* spaces
+identifier = (mpSequence [alpha', alphaNums']) <* spaces
 
 alpha' :: Parser String
 alpha' = (\x -> (x:[])) <$> satisfy "alpha'" isAlpha'
