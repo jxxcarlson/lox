@@ -11,7 +11,6 @@ https://hasura.io/blog/parser-combinators-walkthrough/
 
 {-
 Parameters:
-
    s -- for stream (of Char, Token, etc.)
    e -- the error type
    a -- what running the parser yields
