@@ -2,24 +2,20 @@
 module MiniParsec where
 
 {-
-
 MiniParsec is a built-from=scratch, simplified version of the
 Parsec combinator library which is basd on the blog post
 https://hasura.io/blog/parser-combinators-walkthrough/
-
 -}
 
 
 -- TYPES
 
 {-
-
 Parameters:
 
    s -- for stream (of Char, Token, etc.)
    e -- the error type
    a -- what running the parser yields
-
 -}
 newtype MPParser s e a = MPParser {
   runParser :: [s] -> ([s], Either e a)
@@ -38,13 +34,11 @@ any = MPParser $ \input -> case input of
 
 
 {-
-
   > runParser (satisfy "starts with x" (\c -> c == 'x')) "xyz"
   ("yz",Right 'x')
 
   > runParser (satisfy "starts with x" (\c -> c == 'x')) "axyz"
   ("axyz", Left (ParseError "starts with x" "'a'"))
-
 -}
 satisfy :: String -> (a -> Bool) -> MPParser a ParseError a
 satisfy description predicate = try $ do
@@ -162,7 +156,6 @@ sepBy1 p s = do
 
 
 {-
-
 Apply parser p, then apply parser function q as many times as possible.
 For both p and q, accumulate the results.  This combinator is useful
 when parsing expressions resulting from the production rule 
