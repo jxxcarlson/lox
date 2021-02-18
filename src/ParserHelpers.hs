@@ -47,6 +47,10 @@ decimalPoint =  string "."
 
 doubleDigits = choice "double" [try floatDigits_, integerDigits]
 
+integerDigits = (mpSequence [nonzeroDigit, digits]) <* spaces
+
+floatDigits_ = (mpSequence [integerDigits, decimalPoint, digits]) <* spaces
+
 double :: Parser Double
 double = (\x -> read x) <$> doubleDigits
 
@@ -61,10 +65,6 @@ restOfString = many (satisfy "restOfString" (\c -> c /= '\"'))
 -- LITERAL STRINGS
 
 literalString = quotationMark >> restOfString <*quotationMark
-
-integerDigits = (mpSequence [nonzeroDigit, digits]) <* spaces
-
-floatDigits_ = (mpSequence [integerDigits, decimalPoint, digits]) <* spaces
 
 -- IDENTIFIER
 
